@@ -1,0 +1,1209 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Shancrys.Api.Data;
+using Shancrys.Api.Middleware;
+using Shancrys.Api.Models;
+
+namespace Shancrys.Api.Controllers;
+
+[ApiController]
+[Route("api/v1/activities")]
+[Authorize]
+public class ActivitiesController : ControllerBase
+{
+    private readonly ShancrysDbContext _context;
+    private readonly ITenantService _tenantService;
+    private readonly ILogger<ActivitiesController> _logger;
+
+    public ActivitiesController(
+        ShancrysDbContext context,
+        ITenantService tenantService,
+        ILogger<ActivitiesController> logger)
+    {
+        _context = context;
+        _tenantService = tenantService;
+        _logger = logger;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<List<Activity>>> GetActivities([FromQuery] Guid projectId)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var activities = await _context.Activities
+            .Include(a => a.Project)
+            .Where(a => a.ProjectId == projectId && a.Project.TenantId == tenantId)
+            .OrderBy(a => a.Wbs)
+            .ToListAsync();
+
+        return Ok(activities);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Activity>> GetActivity(Guid id)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var activity = await _context.Activities
+            .Include(a => a.Project)
+            .FirstOrDefaultAsync(a => a.Id == id && a.Project.TenantId == tenantId);
+
+        if (activity == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(activity);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<Activity>> CreateActivity([FromBody] CreateActivityDto dto)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var project = await _context.Projects
+            .FirstOrDefaultAsync(p => p.Id == dto.ProjectId && p.TenantId == tenantId);
+
+        if (project == null)
+        {
+            return NotFound("Projeto não encontrado");
+        }
+
+        var activity = new Activity
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = dto.ProjectId,
+            Wbs = dto.Wbs,
+            Name = dto.Name,
+            Description = dto.Description,
+            PlannedStartDate = dto.PlannedStartDate,
+            PlannedEndDate = dto.PlannedEndDate,
+            Duration = (dto.PlannedEndDate - dto.PlannedStartDate).Days,
+            Status = ActivityStatus.NotStarted,
+            Predecessors = dto.Predecessors ?? new List<string>(),
+            Metadata = dto.Metadata ?? new Dictionary<string, object>()
+        };
+
+        _context.Activities.Add(activity);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Activity {ActivityId} created for project {ProjectId}", 
+            activity.Id, dto.ProjectId);
+
+        return CreatedAtAction(nameof(GetActivity), new { id = activity.Id }, activity);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult<Activity>> UpdateActivity(Guid id, [FromBody] UpdateActivityDto dto)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var activity = await _context.Activities
+            .Include(a => a.Project)
+            .FirstOrDefaultAsync(a => a.Id == id && a.Project.TenantId == tenantId);
+
+        if (activity == null)
+        {
+            return NotFound();
+        }
+
+        if (dto.Name != null) activity.Name = dto.Name;
+        if (dto.Description != null) activity.Description = dto.Description;
+        if (dto.PlannedStartDate.HasValue) activity.PlannedStartDate = dto.PlannedStartDate.Value;
+        if (dto.PlannedEndDate.HasValue)
+        {
+            activity.PlannedEndDate = dto.PlannedEndDate.Value;
+            activity.Duration = (activity.PlannedEndDate - activity.PlannedStartDate).Days;
+        }
+        if (dto.ActualStartDate.HasValue) activity.ActualStartDate = dto.ActualStartDate.Value;
+        if (dto.ActualEndDate.HasValue) activity.ActualEndDate = dto.ActualEndDate.Value;
+        if (dto.ProgressPercent.HasValue) activity.ProgressPercent = dto.ProgressPercent.Value;
+        if (dto.Status.HasValue) activity.Status = dto.Status.Value;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(activity);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteActivity(Guid id)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var activity = await _context.Activities
+            .Include(a => a.Project)
+            .FirstOrDefaultAsync(a => a.Id == id && a.Project.TenantId == tenantId);
+
+        if (activity == null)
+        {
+            return NotFound();
+        }
+
+        _context.Activities.Remove(activity);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [HttpPost("bulk")]
+    public async Task<ActionResult> ImportActivities([FromBody] List<CreateActivityDto> activities)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+
+        if (activities == null || activities.Count == 0)
+        {
+            return BadRequest("Nenhuma atividade fornecida");
+        }
+
+        var projectId = activities.First().ProjectId;
+        var project = await _context.Projects
+            .FirstOrDefaultAsync(p => p.Id == projectId && p.TenantId == tenantId);
+
+        if (project == null)
+        {
+            return NotFound("Projeto não encontrado");
+        }
+
+        var newActivities = activities.Select(dto => new Activity
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = dto.ProjectId,
+            Wbs = dto.Wbs,
+            Name = dto.Name,
+            Description = dto.Description,
+            PlannedStartDate = dto.PlannedStartDate,
+            PlannedEndDate = dto.PlannedEndDate,
+            Duration = (dto.PlannedEndDate - dto.PlannedStartDate).Days,
+            Status = ActivityStatus.NotStarted,
+            Predecessors = dto.Predecessors ?? new List<string>(),
+            Metadata = dto.Metadata ?? new Dictionary<string, object>()
+        }).ToList();
+
+        _context.Activities.AddRange(newActivities);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Imported {Count} activities for project {ProjectId}", 
+            newActivities.Count, projectId);
+
+        return CreatedAtAction(nameof(GetActivities), 
+            new { projectId }, 
+            new { count = newActivities.Count });
+    }
+}
+
+public record CreateActivityDto(
+    Guid ProjectId,
+    string Wbs,
+    string Name,
+    string? Description,
+    DateTime PlannedStartDate,
+    DateTime PlannedEndDate,
+    List<string>? Predecessors,
+    Dictionary<string, object>? Metadata
+);
+
+public record UpdateActivityDto(
+    string? Name,
+    string? Description,
+    DateTime? PlannedStartDate,
+    DateTime? PlannedEndDate,
+    DateTime? ActualStartDate,
+    DateTime? ActualEndDate,
+    decimal? ProgressPercent,
+    Shancrys.Api.Models.ActivityStatus? Status
+);
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Shancrys.Api.Services;
+
+namespace Shancrys.Api.Controllers;
+
+[ApiController]
+[Route("api/v1/auth")]
+public class AuthController : ControllerBase
+{
+    private readonly IAuthService _authService;
+    private readonly ILogger<AuthController> _logger;
+
+    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    {
+        _authService = authService;
+        _logger = logger;
+    }
+
+    [HttpPost("login")]
+    [AllowAnonymous]
+    public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginRequestDto request)
+    {
+        var (success, token, refreshToken, user, error) = await _authService.LoginAsync(request.Email, request.Password);
+
+        if (!success)
+        {
+            return Unauthorized(new { message = error ?? "Invalid credentials" });
+        }
+
+        return Ok(new LoginResponseDto
+        {
+            Token = token!,
+            RefreshToken = refreshToken,
+            ExpiresIn = 3600,
+            User = new UserDto
+            {
+                Id = user!.Id,
+                Email = user.Email,
+                Name = user.Name,
+                Roles = user.Roles,
+                TenantId = user.TenantId
+            }
+        });
+    }
+
+    [HttpPost("register")]
+    [AllowAnonymous]
+    public async Task<ActionResult<RegisterResponseDto>> Register([FromBody] RegisterRequestDto request)
+    {
+        // Validação básica
+        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+        {
+            return BadRequest(new { message = "Email e senha são obrigatórios" });
+        }
+
+        if (request.Password.Length < 6)
+        {
+            return BadRequest(new { message = "Senha deve ter pelo menos 6 caracteres" });
+        }
+
+        var tenantId = request.TenantId ?? Guid.NewGuid(); // Novo tenant se não especificado
+        var roles = request.Roles ?? new List<string> { "reader" };
+
+        var (success, user, error) = await _authService.RegisterAsync(
+            request.Email,
+            request.Password,
+            request.Name,
+            tenantId,
+            roles
+        );
+
+        if (!success)
+        {
+            return BadRequest(new { message = error ?? "Falha ao registrar usuário" });
+        }
+
+        var token = _authService.GenerateJwtToken(user!);
+
+        _logger.LogInformation("User {UserId} registered successfully", user!.Id);
+
+        return CreatedAtAction(nameof(Register), new RegisterResponseDto
+        {
+            Token = token,
+            ExpiresIn = 3600,
+            User = new UserDto
+            {
+                Id = user.Id,
+                Email = user.Email,
+                Name = user.Name,
+                Roles = user.Roles,
+                TenantId = user.TenantId
+            }
+        });
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    public ActionResult<UserDto> GetCurrentUser()
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+        var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+        var tenantId = User.FindFirst("tenantId")?.Value;
+        var roles = User.FindAll(System.Security.Claims.ClaimTypes.Role).Select(c => c.Value).ToList();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        return Ok(new UserDto
+        {
+            Id = Guid.Parse(userId),
+            Email = email!,
+            Name = name!,
+            Roles = roles,
+            TenantId = Guid.Parse(tenantId!)
+        });
+    }
+}
+
+public record LoginRequestDto(string Email, string Password);
+
+public record LoginResponseDto
+{
+    public required string Token { get; init; }
+    public string? RefreshToken { get; init; }
+    public int ExpiresIn { get; init; }
+    public required UserDto User { get; init; }
+}
+
+public record RegisterRequestDto(
+    string Email,
+    string Password,
+    string Name,
+    Guid? TenantId,
+    List<string>? Roles
+);
+
+public record RegisterResponseDto
+{
+    public required string Token { get; init; }
+    public int ExpiresIn { get; init; }
+    public required UserDto User { get; init; }
+}
+
+public record UserDto
+{
+    public required Guid Id { get; init; }
+    public required string Email { get; init; }
+    public required string Name { get; init; }
+    public required List<string> Roles { get; init; }
+    public required Guid TenantId { get; init; }
+}
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Shancrys.Api.Data;
+using Shancrys.Api.Middleware;
+using Shancrys.Api.Models;
+
+namespace Shancrys.Api.Controllers;
+
+[ApiController]
+[Route("api/v1/elements")]
+[Authorize]
+public class ElementsController : ControllerBase
+{
+    private readonly ShancrysDbContext _context;
+    private readonly ITenantService _tenantService;
+    private readonly ILogger<ElementsController> _logger;
+
+    public ElementsController(
+        ShancrysDbContext context,
+        ITenantService tenantService,
+        ILogger<ElementsController> logger)
+    {
+        _context = context;
+        _tenantService = tenantService;
+        _logger = logger;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<PagedResult<Element>>> GetElements(
+        [FromQuery] Guid? modelVersionId,
+        [FromQuery] string? discipline,
+        [FromQuery] string? type,
+        [FromQuery] string? search,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 100)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var query = _context.Elements
+            .Include(e => e.ModelVersion)
+            .ThenInclude(m => m.Project)
+            .Where(e => e.ModelVersion.Project.TenantId == tenantId);
+
+        if (modelVersionId.HasValue)
+        {
+            query = query.Where(e => e.ModelVersionId == modelVersionId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(discipline))
+        {
+            query = query.Where(e => e.Discipline == discipline);
+        }
+
+        if (!string.IsNullOrWhiteSpace(type))
+        {
+            query = query.Where(e => e.Type == type);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(e => 
+                e.Name.Contains(search) || 
+                e.IfcGuid.Contains(search));
+        }
+
+        var total = await query.CountAsync();
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return Ok(new PagedResult<Element>
+        {
+            Items = items,
+            Total = total,
+            Page = page,
+            PageSize = pageSize
+        });
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Element>> GetElement(Guid id)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var element = await _context.Elements
+            .Include(e => e.ModelVersion)
+            .ThenInclude(m => m.Project)
+            .FirstOrDefaultAsync(e => 
+                e.Id == id && 
+                e.ModelVersion.Project.TenantId == tenantId);
+
+        if (element == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(element);
+    }
+
+    [HttpGet("disciplines")]
+    public async Task<ActionResult<List<string>>> GetDisciplines([FromQuery] Guid? modelVersionId)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var query = _context.Elements
+            .Include(e => e.ModelVersion)
+            .ThenInclude(m => m.Project)
+            .Where(e => e.ModelVersion.Project.TenantId == tenantId);
+
+        if (modelVersionId.HasValue)
+        {
+            query = query.Where(e => e.ModelVersionId == modelVersionId.Value);
+        }
+
+        var disciplines = await query
+            .Select(e => e.Discipline)
+            .Distinct()
+            .OrderBy(d => d)
+            .ToListAsync();
+
+        return Ok(disciplines);
+    }
+
+    [HttpGet("types")]
+    public async Task<ActionResult<List<string>>> GetTypes(
+        [FromQuery] Guid? modelVersionId,
+        [FromQuery] string? discipline)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var query = _context.Elements
+            .Include(e => e.ModelVersion)
+            .ThenInclude(m => m.Project)
+            .Where(e => e.ModelVersion.Project.TenantId == tenantId);
+
+        if (modelVersionId.HasValue)
+        {
+            query = query.Where(e => e.ModelVersionId == modelVersionId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(discipline))
+        {
+            query = query.Where(e => e.Discipline == discipline);
+        }
+
+        var types = await query
+            .Select(e => e.Type)
+            .Distinct()
+            .OrderBy(t => t)
+            .ToListAsync();
+
+        return Ok(types);
+    }
+
+    [HttpPost("bulk")]
+    public async Task<ActionResult> CreateElementsBulk([FromBody] List<CreateElementDto> elements)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+
+        if (elements == null || elements.Count == 0)
+        {
+            return BadRequest("Nenhum elemento fornecido");
+        }
+
+        var modelVersionId = elements.First().ModelVersionId;
+        
+        // Validar modelo
+        var model = await _context.ModelVersions
+            .Include(m => m.Project)
+            .FirstOrDefaultAsync(m => 
+                m.Id == modelVersionId && 
+                m.Project.TenantId == tenantId);
+
+        if (model == null)
+        {
+            return NotFound("Modelo não encontrado");
+        }
+
+        var newElements = elements.Select(dto => new Element
+        {
+            Id = Guid.NewGuid(),
+            ModelVersionId = dto.ModelVersionId,
+            IfcGuid = dto.IfcGuid,
+            Name = dto.Name,
+            Type = dto.Type,
+            Discipline = dto.Discipline,
+            Level = dto.Level,
+            BoundingBox = dto.BoundingBox,
+            Properties = dto.Properties ?? new Dictionary<string, object>()
+        }).ToList();
+
+        _context.Elements.AddRange(newElements);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Created {Count} elements for model {ModelId}", 
+            newElements.Count, modelVersionId);
+
+        return CreatedAtAction(nameof(GetElements), 
+            new { modelVersionId }, 
+            new { count = newElements.Count, ids = newElements.Select(e => e.Id) });
+    }
+}
+
+public record CreateElementDto(
+    Guid ModelVersionId,
+    string IfcGuid,
+    string Name,
+    string Type,
+    string Discipline,
+    string? Level,
+    double[]? BoundingBox,
+    Dictionary<string, object>? Properties
+);
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Shancrys.Api.Data;
+using Shancrys.Api.Middleware;
+using Shancrys.Api.Models;
+
+namespace Shancrys.Api.Controllers;
+
+[ApiController]
+[Route("api/v1/mappings")]
+[Authorize]
+public class MappingsController : ControllerBase
+{
+    private readonly ShancrysDbContext _context;
+    private readonly ITenantService _tenantService;
+    private readonly ILogger<MappingsController> _logger;
+
+    public MappingsController(
+        ShancrysDbContext context,
+        ITenantService tenantService,
+        ILogger<MappingsController> logger)
+    {
+        _context = context;
+        _tenantService = tenantService;
+        _logger = logger;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<List<ElementActivityMapping>>> GetMappings(
+        [FromQuery] Guid? projectId,
+        [FromQuery] Guid? activityId,
+        [FromQuery] Guid? elementId)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var query = _context.ElementActivityMappings
+            .Include(m => m.Element)
+            .ThenInclude(e => e.ModelVersion)
+            .ThenInclude(mv => mv.Project)
+            .Include(m => m.Activity)
+            .ThenInclude(a => a.Project)
+            .Where(m => m.Activity.Project.TenantId == tenantId);
+
+        if (projectId.HasValue)
+        {
+            query = query.Where(m => m.Activity.ProjectId == projectId.Value);
+        }
+
+        if (activityId.HasValue)
+        {
+            query = query.Where(m => m.ActivityId == activityId.Value);
+        }
+
+        if (elementId.HasValue)
+        {
+            query = query.Where(m => m.ElementId == elementId.Value);
+        }
+
+        var mappings = await query.ToListAsync();
+
+        return Ok(mappings);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<ElementActivityMapping>> CreateMapping([FromBody] CreateMappingDto dto)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        // Validar elemento
+        var element = await _context.Elements
+            .Include(e => e.ModelVersion)
+            .ThenInclude(m => m.Project)
+            .FirstOrDefaultAsync(e => e.Id == dto.ElementId && e.ModelVersion.Project.TenantId == tenantId);
+
+        if (element == null)
+        {
+            return NotFound("Elemento não encontrado");
+        }
+
+        // Validar atividade
+        var activity = await _context.Activities
+            .Include(a => a.Project)
+            .FirstOrDefaultAsync(a => a.Id == dto.ActivityId && a.Project.TenantId == tenantId);
+
+        if (activity == null)
+        {
+            return NotFound("Atividade não encontrada");
+        }
+
+        // Verificar se já existe mapeamento
+        var existing = await _context.ElementActivityMappings
+            .FirstOrDefaultAsync(m => m.ElementId == dto.ElementId && m.ActivityId == dto.ActivityId);
+
+        if (existing != null)
+        {
+            return Conflict("Mapeamento já existe");
+        }
+
+        var mapping = new ElementActivityMapping
+        {
+            Id = Guid.NewGuid(),
+            ElementId = dto.ElementId,
+            ActivityId = dto.ActivityId,
+            MappingType = dto.MappingType,
+            Confidence = dto.Confidence,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.ElementActivityMappings.Add(mapping);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Mapping created: Element {ElementId} -> Activity {ActivityId}", 
+            dto.ElementId, dto.ActivityId);
+
+        return CreatedAtAction(nameof(GetMappings), 
+            new { elementId = dto.ElementId, activityId = dto.ActivityId }, 
+            mapping);
+    }
+
+    [HttpPost("bulk")]
+    public async Task<ActionResult> CreateMappingsBulk([FromBody] List<CreateMappingDto> mappings)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+
+        if (mappings == null || mappings.Count == 0)
+        {
+            return BadRequest("Nenhum mapeamento fornecido");
+        }
+
+        var elementIds = mappings.Select(m => m.ElementId).Distinct().ToList();
+        var activityIds = mappings.Select(m => m.ActivityId).Distinct().ToList();
+
+        // Validar elementos
+        var validElements = await _context.Elements
+            .Include(e => e.ModelVersion)
+            .ThenInclude(m => m.Project)
+            .Where(e => elementIds.Contains(e.Id) && e.ModelVersion.Project.TenantId == tenantId)
+            .Select(e => e.Id)
+            .ToListAsync();
+
+        // Validar atividades
+        var validActivities = await _context.Activities
+            .Include(a => a.Project)
+            .Where(a => activityIds.Contains(a.Id) && a.Project.TenantId == tenantId)
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        var newMappings = mappings
+            .Where(dto => validElements.Contains(dto.ElementId) && validActivities.Contains(dto.ActivityId))
+            .Select(dto => new ElementActivityMapping
+            {
+                Id = Guid.NewGuid(),
+                ElementId = dto.ElementId,
+                ActivityId = dto.ActivityId,
+                MappingType = dto.MappingType,
+                Confidence = dto.Confidence,
+                CreatedAt = DateTime.UtcNow
+            })
+            .ToList();
+
+        _context.ElementActivityMappings.AddRange(newMappings);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Created {Count} mappings", newMappings.Count);
+
+        return CreatedAtAction(nameof(GetMappings), 
+            null, 
+            new { count = newMappings.Count });
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteMapping(Guid id)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var mapping = await _context.ElementActivityMappings
+            .Include(m => m.Activity)
+            .ThenInclude(a => a.Project)
+            .FirstOrDefaultAsync(m => m.Id == id && m.Activity.Project.TenantId == tenantId);
+
+        if (mapping == null)
+        {
+            return NotFound();
+        }
+
+        _context.ElementActivityMappings.Remove(mapping);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [HttpPost("auto-map")]
+    public async Task<ActionResult> AutoMapByRules([FromBody] AutoMapRequestDto dto)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+
+        // Buscar elementos do modelo
+        var elements = await _context.Elements
+            .Include(e => e.ModelVersion)
+            .ThenInclude(m => m.Project)
+            .Where(e => e.ModelVersionId == dto.ModelVersionId && e.ModelVersion.Project.TenantId == tenantId)
+            .ToListAsync();
+
+        // Buscar atividades do projeto
+        var activities = await _context.Activities
+            .Include(a => a.Project)
+            .Where(a => a.ProjectId == dto.ProjectId && a.Project.TenantId == tenantId)
+            .ToListAsync();
+
+        var newMappings = new List<ElementActivityMapping>();
+
+        // Regra simples: mapear por disciplina e tipo
+        foreach (var element in elements)
+        {
+            var matchingActivity = activities.FirstOrDefault(a =>
+                a.Name.Contains(element.Discipline, StringComparison.OrdinalIgnoreCase) ||
+                a.Name.Contains(element.Type, StringComparison.OrdinalIgnoreCase) ||
+                (element.Level != null && a.Name.Contains(element.Level, StringComparison.OrdinalIgnoreCase))
+            );
+
+            if (matchingActivity != null)
+            {
+                newMappings.Add(new ElementActivityMapping
+                {
+                    Id = Guid.NewGuid(),
+                    ElementId = element.Id,
+                    ActivityId = matchingActivity.Id,
+                    MappingType = MappingType.AutoGenerated,
+                    Confidence = 0.7m,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        _context.ElementActivityMappings.AddRange(newMappings);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Auto-mapped {Count} elements to activities", newMappings.Count);
+
+        return Ok(new { 
+            message = "Mapeamento automático concluído", 
+            count = newMappings.Count,
+            totalElements = elements.Count,
+            coverage = elements.Count > 0 ? (decimal)newMappings.Count / elements.Count * 100 : 0
+        });
+    }
+}
+
+public record CreateMappingDto(
+    Guid ElementId,
+    Guid ActivityId,
+    Shancrys.Api.Models.MappingType MappingType,
+    decimal Confidence
+);
+
+public record AutoMapRequestDto(
+    Guid ProjectId,
+    Guid ModelVersionId
+);
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Shancrys.Api.Data;
+using Shancrys.Api.Middleware;
+using Shancrys.Api.Models;
+
+namespace Shancrys.Api.Controllers;
+
+[ApiController]
+[Route("api/v1/models")]
+[Authorize]
+public class ModelsController : ControllerBase
+{
+    private readonly ShancrysDbContext _context;
+    private readonly ITenantService _tenantService;
+    private readonly ILogger<ModelsController> _logger;
+
+    public ModelsController(
+        ShancrysDbContext context,
+        ITenantService tenantService,
+        ILogger<ModelsController> logger)
+    {
+        _context = context;
+        _tenantService = tenantService;
+        _logger = logger;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<PagedResult<ModelVersion>>> GetModels(
+        [FromQuery] Guid? projectId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        var query = _context.ModelVersions
+            .Include(m => m.Project)
+            .Where(m => m.Project.TenantId == tenantId);
+
+        if (projectId.HasValue)
+        {
+            query = query.Where(m => m.ProjectId == projectId.Value);
+        }
+
+        var total = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(m => m.UploadedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return Ok(new PagedResult<ModelVersion>
+        {
+            Items = items,
+            Total = total,
+            Page = page,
+            PageSize = pageSize
+        });
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<ModelVersion>> GetModel(Guid id)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        var model = await _context.ModelVersions
+            .Include(m => m.Project)
+            .FirstOrDefaultAsync(m => m.Id == id && m.Project.TenantId == tenantId);
+
+        if (model == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(model);
+    }
+
+    [HttpPost]
+    [RequestSizeLimit(500_000_000)] // 500MB max
+    public async Task<ActionResult<ModelVersion>> UploadModel(
+        [FromForm] Guid projectId,
+        [FromForm] IFormFile file,
+        [FromForm] string? description)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        // Validar projeto
+        var project = await _context.Projects
+            .FirstOrDefaultAsync(p => p.Id == projectId && p.TenantId == tenantId);
+        
+        if (project == null)
+        {
+            return NotFound("Projeto não encontrado");
+        }
+
+        // Validar arquivo
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest("Arquivo não fornecido");
+        }
+
+        var allowedExtensions = new[] { ".ifc", ".ifcxml", ".rvt", ".dgn" };
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        
+        if (!allowedExtensions.Contains(extension))
+        {
+            return BadRequest($"Formato não suportado. Use: {string.Join(", ", allowedExtensions)}");
+        }
+
+        // Salvar arquivo temporariamente
+        var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", tenantId.ToString());
+        Directory.CreateDirectory(uploadsPath);
+        
+        var fileName = $"{Guid.NewGuid()}{extension}";
+        var filePath = Path.Combine(uploadsPath, fileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        // Calcular hash do arquivo
+        string fileHash;
+        using (var md5 = System.Security.Cryptography.MD5.Create())
+        using (var stream = System.IO.File.OpenRead(filePath))
+        {
+            var hash = await md5.ComputeHashAsync(stream);
+            fileHash = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+        }
+
+        // Criar versão do modelo
+        var model = new ModelVersion
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = projectId,
+            FileName = file.FileName,
+            FilePath = filePath,
+            FileSize = file.Length,
+            FileHash = fileHash,
+            Format = extension.TrimStart('.').ToUpperInvariant(),
+            Description = description,
+            Version = await GetNextVersionNumber(projectId),
+            UploadedAt = DateTime.UtcNow,
+            Status = ModelStatus.Uploaded,
+            Stats = new Dictionary<string, object>
+            {
+                { "uploadedBy", User.Identity?.Name ?? "unknown" }
+            }
+        };
+
+        _context.ModelVersions.Add(model);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Model {ModelId} uploaded for project {ProjectId}", model.Id, projectId);
+
+        // TODO: Enfileirar job para processar o modelo via engine C++
+        // await _messageQueue.PublishAsync("modelo.uploaded", new { modelId = model.Id });
+
+        return CreatedAtAction(nameof(GetModel), new { id = model.Id }, model);
+    }
+
+    [HttpPost("{id}/process")]
+    public async Task<ActionResult> ProcessModel(Guid id)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        var model = await _context.ModelVersions
+            .Include(m => m.Project)
+            .FirstOrDefaultAsync(m => m.Id == id && m.Project.TenantId == tenantId);
+
+        if (model == null)
+        {
+            return NotFound();
+        }
+
+        if (model.Status == ModelStatus.Processing)
+        {
+            return BadRequest("Modelo já está sendo processado");
+        }
+
+        model.Status = ModelStatus.Processing;
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Starting processing for model {ModelId}", id);
+
+        // TODO: Chamar engine C++ para processar
+        // Simulação: extrair elementos mock
+        _ = Task.Run(async () => await SimulateModelProcessing(id));
+
+        return Accepted(new { message = "Processamento iniciado", modelId = id });
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteModel(Guid id)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        var model = await _context.ModelVersions
+            .Include(m => m.Project)
+            .FirstOrDefaultAsync(m => m.Id == id && m.Project.TenantId == tenantId);
+
+        if (model == null)
+        {
+            return NotFound();
+        }
+
+        // Deletar arquivo físico
+        if (System.IO.File.Exists(model.FilePath))
+        {
+            System.IO.File.Delete(model.FilePath);
+        }
+
+        _context.ModelVersions.Remove(model);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    private async Task<int> GetNextVersionNumber(Guid projectId)
+    {
+        var maxVersion = await _context.ModelVersions
+            .Where(m => m.ProjectId == projectId)
+            .MaxAsync(m => (int?)m.Version) ?? 0;
+        
+        return maxVersion + 1;
+    }
+
+    private async Task SimulateModelProcessing(Guid modelId)
+    {
+        await Task.Delay(2000); // Simula processamento
+
+        using var scope = HttpContext.RequestServices.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ShancrysDbContext>();
+        
+        var model = await context.ModelVersions.FindAsync(modelId);
+        if (model != null)
+        {
+            model.Status = ModelStatus.Ready;
+            model.Stats = new Dictionary<string, object>
+            {
+                { "totalElements", 150 },
+                { "architectural", 80 },
+                { "structural", 50 },
+                { "mep", 20 },
+                { "processedAt", DateTime.UtcNow }
+            };
+            await context.SaveChangesAsync();
+        }
+    }
+}
+
+public class PagedResult<T>
+{
+    public List<T> Items { get; set; } = new();
+    public int Total { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalPages => (int)Math.Ceiling(Total / (double)PageSize);
+}
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Shancrys.Api.Data;
+using Shancrys.Api.Middleware;
+using Shancrys.Api.Models;
+
+namespace Shancrys.Api.Controllers;
+
+[ApiController]
+[Route("api/v1/projects")]
+[Authorize]
+public class ProjectsController : ControllerBase
+{
+    private readonly ShancrysDbContext _context;
+    private readonly ITenantService _tenantService;
+    private readonly ILogger<ProjectsController> _logger;
+
+    public ProjectsController(
+        ShancrysDbContext context,
+        ITenantService tenantService,
+        ILogger<ProjectsController> logger)
+    {
+        _context = context;
+        _tenantService = tenantService;
+        _logger = logger;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<object>> GetProjects(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        [FromQuery] ProjectStatus? status = null)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        if (tenantId == null)
+            return Unauthorized(new { message = "Tenant not identified" });
+
+        var query = _context.Projects.Where(p => p.TenantId == tenantId);
+
+        if (status.HasValue)
+            query = query.Where(p => p.Status == status.Value);
+
+        var total = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(p => p.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return Ok(new
+        {
+            items,
+            total,
+            page,
+            pageSize
+        });
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<Project>> CreateProject([FromBody] ProjectCreateDto dto)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        if (tenantId == null)
+            return Unauthorized(new { message = "Tenant not identified" });
+
+        var project = new Project
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId.Value,
+            Name = dto.Name,
+            Location = dto.Location,
+            Description = dto.Description,
+            Status = ProjectStatus.Planning
+        };
+
+        _context.Projects.Add(project);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Project {ProjectId} created by tenant {TenantId}", project.Id, tenantId);
+
+        return CreatedAtAction(nameof(GetProject), new { id = project.Id }, project);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Project>> GetProject(Guid id)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        if (tenantId == null)
+            return Unauthorized();
+
+        var project = await _context.Projects
+            .FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId);
+
+        if (project == null)
+            return NotFound();
+
+        return Ok(project);
+    }
+}
+
+public record ProjectCreateDto(string Name, string Location, string? Description);
+

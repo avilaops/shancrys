@@ -1,0 +1,221 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Shancrys.Api.Data;
+using Shancrys.Api.Middleware;
+using Shancrys.Api.Models;
+
+namespace Shancrys.Api.Controllers;
+
+[ApiController]
+[Route("api/v1/activities")]
+[Authorize]
+public class ActivitiesController : ControllerBase
+{
+    private readonly ShancrysDbContext _context;
+    private readonly ITenantService _tenantService;
+    private readonly ILogger<ActivitiesController> _logger;
+
+    public ActivitiesController(
+        ShancrysDbContext context,
+        ITenantService tenantService,
+        ILogger<ActivitiesController> logger)
+    {
+        _context = context;
+        _tenantService = tenantService;
+        _logger = logger;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<List<Activity>>> GetActivities([FromQuery] Guid projectId)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var activities = await _context.Activities
+            .Include(a => a.Project)
+            .Where(a => a.ProjectId == projectId && a.Project.TenantId == tenantId)
+            .OrderBy(a => a.Wbs)
+            .ToListAsync();
+
+        return Ok(activities);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Activity>> GetActivity(Guid id)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var activity = await _context.Activities
+            .Include(a => a.Project)
+            .FirstOrDefaultAsync(a => a.Id == id && a.Project.TenantId == tenantId);
+
+        if (activity == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(activity);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<Activity>> CreateActivity([FromBody] CreateActivityDto dto)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var project = await _context.Projects
+            .FirstOrDefaultAsync(p => p.Id == dto.ProjectId && p.TenantId == tenantId);
+
+        if (project == null)
+        {
+            return NotFound("Projeto não encontrado");
+        }
+
+        var activity = new Activity
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = dto.ProjectId,
+            Wbs = dto.Wbs,
+            WbsCode = dto.Wbs, // Mesmo valor
+            Name = dto.Name,
+            Description = dto.Description,
+            PlannedStartDate = dto.PlannedStartDate,
+            PlannedEndDate = dto.PlannedEndDate,
+            StartPlanned = dto.PlannedStartDate,
+            EndPlanned = dto.PlannedEndDate,
+            Duration = (dto.PlannedEndDate - dto.PlannedStartDate).Days,
+            Status = ActivityStatus.NotStarted,
+            Predecessors = dto.Predecessors ?? new List<string>(),
+            Metadata = dto.Metadata ?? new Dictionary<string, object>()
+        };
+
+        _context.Activities.Add(activity);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Activity {ActivityId} created for project {ProjectId}", 
+            activity.Id, dto.ProjectId);
+
+        return CreatedAtAction(nameof(GetActivity), new { id = activity.Id }, activity);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult<Activity>> UpdateActivity(Guid id, [FromBody] UpdateActivityDto dto)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var activity = await _context.Activities
+            .Include(a => a.Project)
+            .FirstOrDefaultAsync(a => a.Id == id && a.Project.TenantId == tenantId);
+
+        if (activity == null)
+        {
+            return NotFound();
+        }
+
+        if (dto.Name != null) activity.Name = dto.Name;
+        if (dto.Description != null) activity.Description = dto.Description;
+        if (dto.PlannedStartDate.HasValue) activity.PlannedStartDate = dto.PlannedStartDate.Value;
+        if (dto.PlannedEndDate.HasValue)
+        {
+            activity.PlannedEndDate = dto.PlannedEndDate.Value;
+            activity.Duration = (activity.PlannedEndDate - activity.PlannedStartDate).Days;
+        }
+        if (dto.ActualStartDate.HasValue) activity.ActualStartDate = dto.ActualStartDate.Value;
+        if (dto.ActualEndDate.HasValue) activity.ActualEndDate = dto.ActualEndDate.Value;
+        if (dto.ProgressPercent.HasValue) activity.ProgressPercent = dto.ProgressPercent.Value;
+        if (dto.Status.HasValue) activity.Status = dto.Status.Value;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(activity);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteActivity(Guid id)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+        
+        var activity = await _context.Activities
+            .Include(a => a.Project)
+            .FirstOrDefaultAsync(a => a.Id == id && a.Project.TenantId == tenantId);
+
+        if (activity == null)
+        {
+            return NotFound();
+        }
+
+        _context.Activities.Remove(activity);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [HttpPost("bulk")]
+    public async Task<ActionResult> ImportActivities([FromBody] List<CreateActivityDto> activities)
+    {
+        var tenantId = _tenantService.GetCurrentTenantId();
+
+        if (activities == null || activities.Count == 0)
+        {
+            return BadRequest("Nenhuma atividade fornecida");
+        }
+
+        var projectId = activities.First().ProjectId;
+        var project = await _context.Projects
+            .FirstOrDefaultAsync(p => p.Id == projectId && p.TenantId == tenantId);
+
+        if (project == null)
+        {
+            return NotFound("Projeto não encontrado");
+        }
+
+        var newActivities = activities.Select(dto => new Activity
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = dto.ProjectId,
+            Wbs = dto.Wbs,
+            WbsCode = dto.Wbs,
+            Name = dto.Name,
+            Description = dto.Description,
+            PlannedStartDate = dto.PlannedStartDate,
+            PlannedEndDate = dto.PlannedEndDate,
+            StartPlanned = dto.PlannedStartDate,
+            EndPlanned = dto.PlannedEndDate,
+            Duration = (dto.PlannedEndDate - dto.PlannedStartDate).Days,
+            Status = ActivityStatus.NotStarted,
+            Predecessors = dto.Predecessors ?? new List<string>(),
+            Metadata = dto.Metadata ?? new Dictionary<string, object>()
+        }).ToList();
+
+        _context.Activities.AddRange(newActivities);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Imported {Count} activities for project {ProjectId}", 
+            newActivities.Count, projectId);
+
+        return CreatedAtAction(nameof(GetActivities), 
+            new { projectId }, 
+            new { count = newActivities.Count });
+    }
+}
+
+public record CreateActivityDto(
+    Guid ProjectId,
+    string Wbs,
+    string Name,
+    string? Description,
+    DateTime PlannedStartDate,
+    DateTime PlannedEndDate,
+    List<string>? Predecessors,
+    Dictionary<string, object>? Metadata
+);
+
+public record UpdateActivityDto(
+    string? Name,
+    string? Description,
+    DateTime? PlannedStartDate,
+    DateTime? PlannedEndDate,
+    DateTime? ActualStartDate,
+    DateTime? ActualEndDate,
+    decimal? ProgressPercent,
+    Shancrys.Api.Models.ActivityStatus? Status
+);

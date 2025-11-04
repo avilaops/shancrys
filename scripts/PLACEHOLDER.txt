@@ -1,0 +1,1 @@
+Scripts de automação (build, import, migração) serão adicionados aqui posteriormente.

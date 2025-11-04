@@ -1,0 +1,731 @@
+openapi: 3.1.0
+info:
+  title: Shancrys 4D Platform API
+  version: 1.0.0
+  description: |
+    API REST para plataforma de construção digital 4D.
+    Integra modelos BIM com cronogramas para simulação temporal de obras.
+
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Desenvolvimento local
+  - url: https://api.shancrys.com/api/v1
+    description: Produção
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Auth
+    description: Autenticação e gestão de tokens
+  - name: Projects
+    description: Gestão de projetos
+  - name: Models
+    description: Versionamento de modelos BIM
+  - name: Elements
+    description: Elementos de construção
+  - name: Activities
+    description: Atividades do cronograma
+  - name: Mappings
+    description: Vinculação elementos ↔ atividades
+  - name: Simulation
+    description: Simulação temporal 4D
+  - name: Progress
+    description: Registros de progresso (campo)
+  - name: Costs
+    description: Custos reais e estimados
+  - name: Metrics
+    description: Métricas de desempenho
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Autenticar usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Autenticação bem-sucedida
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  refreshToken:
+                    type: string
+                  expiresIn:
+                    type: integer
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /projects:
+    get:
+      tags: [Projects]
+      summary: Listar projetos do tenant
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [planning, active, paused, completed]
+      responses:
+        '200':
+          description: Lista de projetos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  pageSize:
+                    type: integer
+    post:
+      tags: [Projects]
+      summary: Criar novo projeto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+      responses:
+        '201':
+          description: Projeto criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+
+  /projects/{projectId}/models:
+    get:
+      tags: [Models]
+      summary: Listar versões de modelo
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      responses:
+        '200':
+          description: Lista de versões
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ModelVersion'
+    post:
+      tags: [Models]
+      summary: Upload nova versão de modelo
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                description:
+                  type: string
+      responses:
+        '202':
+          description: Upload aceito, processamento em andamento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  modelVersionId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [processing]
+
+  /projects/{projectId}/models/{versionId}/elements:
+    get:
+      tags: [Elements]
+      summary: Listar elementos de uma versão
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+        - name: versionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: discipline
+          in: query
+          schema:
+            type: string
+            enum: [architecture, structure, electrical, plumbing, hvac]
+        - name: type
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Lista de elementos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Element'
+                  total:
+                    type: integer
+
+  /projects/{projectId}/activities:
+    get:
+      tags: [Activities]
+      summary: Listar atividades do cronograma
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Lista de atividades
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Activity'
+    post:
+      tags: [Activities]
+      summary: Criar atividade
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityCreate'
+      responses:
+        '201':
+          description: Atividade criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activity'
+
+  /projects/{projectId}/mappings:
+    post:
+      tags: [Mappings]
+      summary: Vincular elementos a atividade
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [activityId, elementIds]
+              properties:
+                activityId:
+                  type: string
+                  format: uuid
+                elementIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                weights:
+                  type: array
+                  items:
+                    type: number
+                    minimum: 0
+                    maximum: 1
+      responses:
+        '201':
+          description: Vinculação criada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mappingsCreated:
+                    type: integer
+
+  /projects/{projectId}/simulation:
+    get:
+      tags: [Simulation]
+      summary: Obter estado da simulação 4D
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: modelVersionId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Estado dos elementos na data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date
+                  elements:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        elementId:
+                          type: string
+                          format: uuid
+                        state:
+                          type: string
+                          enum: [notStarted, inProgress, completed, delayed]
+                        progress:
+                          type: number
+                          minimum: 0
+                          maximum: 1
+
+  /projects/{projectId}/progress:
+    get:
+      tags: [Progress]
+      summary: Listar registros de progresso
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+        - name: activityId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Lista de registros
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProgressRecord'
+    post:
+      tags: [Progress]
+      summary: Registrar progresso (campo)
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgressRecordCreate'
+      responses:
+        '201':
+          description: Progresso registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressRecord'
+
+  /projects/{projectId}/metrics/performance:
+    get:
+      tags: [Metrics]
+      summary: Métricas de desempenho
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Métricas calculadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceMetrics'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    ProjectIdParam:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+    PageSizeParam:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 50
+        minimum: 1
+        maximum: 500
+
+  responses:
+    Unauthorized:
+      description: Não autenticado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Sem permissão
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [admin, planner, field, financial, reader]
+        tenantId:
+          type: string
+          format: uuid
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        location:
+          type: string
+        status:
+          type: string
+          enum: [planning, active, paused, completed]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProjectCreate:
+      type: object
+      required: [name, location]
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 200
+        location:
+          type: string
+        description:
+          type: string
+
+    ModelVersion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        fileHash:
+          type: string
+        fileType:
+          type: string
+          enum: [IFC, DGN, RVT]
+        status:
+          type: string
+          enum: [processing, ready, failed]
+        stats:
+          type: object
+          properties:
+            totalElements:
+              type: integer
+            byDiscipline:
+              type: object
+              additionalProperties:
+                type: integer
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+
+    Element:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        versionId:
+          type: string
+          format: uuid
+        guid:
+          type: string
+        discipline:
+          type: string
+        type:
+          type: string
+        volumeEstimated:
+          type: number
+        costEstimated:
+          type: number
+        attributes:
+          type: object
+          additionalProperties: true
+
+    Activity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        wbsCode:
+          type: string
+        name:
+          type: string
+        startPlanned:
+          type: string
+          format: date
+        endPlanned:
+          type: string
+          format: date
+        startActual:
+          type: string
+          format: date
+        endActual:
+          type: string
+          format: date
+        predecessors:
+          type: array
+          items:
+            type: string
+            format: uuid
+        progress:
+          type: number
+          minimum: 0
+          maximum: 1
+
+    ActivityCreate:
+      type: object
+      required: [name, wbsCode, startPlanned, endPlanned]
+      properties:
+        name:
+          type: string
+        wbsCode:
+          type: string
+        startPlanned:
+          type: string
+          format: date
+        endPlanned:
+          type: string
+          format: date
+        predecessors:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    ProgressRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        activityId:
+          type: string
+          format: uuid
+        elementId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        type:
+          type: string
+          enum: [percentage, photo, inspection]
+        value:
+          type: number
+        mediaUrl:
+          type: string
+          format: uri
+        geoLocation:
+          type: object
+          properties:
+            latitude:
+              type: number
+            longitude:
+              type: number
+        author:
+          type: string
+          format: uuid
+
+    ProgressRecordCreate:
+      type: object
+      required: [activityId, type]
+      properties:
+        activityId:
+          type: string
+          format: uuid
+        elementId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [percentage, photo, inspection]
+        value:
+          type: number
+        geoLocation:
+          type: object
+          properties:
+            latitude:
+              type: number
+            longitude:
+              type: number
+
+    PerformanceMetrics:
+      type: object
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        period:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date
+            end:
+              type: string
+              format: date
+        progressPlanned:
+          type: number
+        progressActual:
+          type: number
+        costPlanned:
+          type: number
+        costActual:
+          type: number
+        topDelays:
+          type: array
+          items:
+            type: object
+            properties:
+              activityId:
+                type: string
+                format: uuid
+              activityName:
+                type: string
+              delayDays:
+                type: integer
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
