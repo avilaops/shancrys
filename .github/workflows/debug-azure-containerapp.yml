@@ -1,40 +1,6 @@
 name: Debug Shancrys API Logs
 
 on:
-<<<<<<< HEAD
-    workflow_dispatch:
-
-env:
-    RESOURCE_GROUP: shancrys-rg
-    CONTAINER_APP: shancrys-api-dev
-
-jobs:
-    debug:
-        runs-on: ubuntu-latest
-        permissions:
-            id-token: write
-            contents: read
-
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-
-            - name: Azure Login
-              uses: azure/login@v2
-              with:
-                  client-id: ${{ secrets.SHANCRYSAPIDEV_AZURE_CLIENT_ID }}
-                  tenant-id: ${{ secrets.SHANCRYSAPIDEV_AZURE_TENANT_ID }}
-                  subscription-id: ${{ secrets.SHANCRYSAPIDEV_AZURE_SUBSCRIPTION_ID }}
-
-            - name: Show container logs
-              run: |
-                  echo "Fetching last 200 log lines from Azure Container App..."
-                  az containerapp logs show \
-                    --name ${{ env.CONTAINER_APP }} \
-                    --resource-group ${{ env.RESOURCE_GROUP }} \
-                    --tail 200 \
-                    --type console
-=======
   workflow_dispatch:
 
 env:
@@ -67,4 +33,3 @@ jobs:
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --tail 200 \
             --type console
->>>>>>> 04135ad81a7b51ca4c468371be5a14c8735dd53c
