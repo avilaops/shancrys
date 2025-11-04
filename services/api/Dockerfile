@@ -11,5 +11,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app/publish .
 
+# Define a porta de escuta para o Kestrel
+ENV ASPNETCORE_URLS=http://+:5000
 EXPOSE 5000
+
 ENTRYPOINT ["dotnet", "Shancrys.Api.dll"]
