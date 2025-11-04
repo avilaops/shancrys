@@ -5,7 +5,7 @@ Backend REST para plataforma Shancrys 4D.
 ## Stack
 
 - .NET 8 (C#)
-- PostgreSQL + EF Core
+- MongoDB (Database)
 - JWT Authentication
 - RabbitMQ (eventos)
 - Serilog (logs estruturados)
