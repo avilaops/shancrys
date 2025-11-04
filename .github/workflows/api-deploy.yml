@@ -1,11 +1,7 @@
-name: Deploy API to Azure
+name: Deploy API to Azure (DISABLED)
 
+# Workflow desabilitado - usando deploy-azure-containerapp.yml
 on:
-  push:
-    branches: [main]
-    paths:
-      - "services/api/**"
-      - ".github/workflows/api-deploy.yml"
   workflow_dispatch:
 
 env:
