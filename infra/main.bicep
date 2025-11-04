@@ -59,15 +59,15 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
-// App Service Plan (Linux, Premium V3)
+// App Service Plan (Linux, Free/Standard)
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: appServicePlanName
   location: location
   tags: tags
   kind: 'linux'
   sku: {
-    name: environment == 'prod' ? 'P1v3' : 'B1'
-    tier: environment == 'prod' ? 'PremiumV3' : 'Basic'
+    name: environment == 'prod' ? 'S1' : 'F1'
+    tier: environment == 'prod' ? 'Standard' : 'Free'
   }
   properties: {
     reserved: true
