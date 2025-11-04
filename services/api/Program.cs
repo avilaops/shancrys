@@ -37,6 +37,9 @@ builder.Services.AddScoped(sp =>
     return client.GetDatabase(mongoSettings.DatabaseName);
 });
 
+// Register Identity services
+builder.Services.AddScoped<IPasswordHasher<Shancrys.Api.Models.User>, PasswordHasher<Shancrys.Api.Models.User>>();
+
 // Register application services
 builder.Services.AddScoped<Shancrys.Api.Services.IAuthService, Shancrys.Api.Services.AuthService>();
 
