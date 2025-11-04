@@ -21,6 +21,7 @@ $sp | Out-File -Encoding UTF8 azure-credentials.json
 ```
 
 O output será algo assim:
+
 ```json
 {
   "clientId": "xxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx",
@@ -52,13 +53,15 @@ az staticwebapp secrets list `
 ### 3. API_URL
 
 URL da API após deploy (será algo como):
+
 ```
 https://shancrys-api.XXXXXXX.eastus2.azurecontainerapps.io
 ```
 
 ## ✅ Como Adicionar Secrets no GitHub
 
-### Via GitHub CLI:
+### Via GitHub CLI
+
 ```powershell
 # 1. AZURE_CREDENTIALS (cole o JSON)
 gh secret set AZURE_CREDENTIALS < azure-credentials.json
@@ -71,8 +74,9 @@ $swaToken | gh secret set AZURE_STATIC_WEB_APPS_API_TOKEN
 gh secret set API_URL -b "https://sua-api-url.azurecontainerapps.io"
 ```
 
-### Via Web:
-1. Vá em: https://github.com/avilaops/shancrys/settings/secrets/actions
+### Via Web
+
+1. Vá em: <https://github.com/avilaops/shancrys/settings/secrets/actions>
 2. Clique em **"New repository secret"**
 3. Adicione cada secret
 
@@ -82,7 +86,7 @@ gh secret set API_URL -b "https://sua-api-url.azurecontainerapps.io"
 gh secret list
 ```
 
-## ⚠️ IMPORTANTE!
+## ⚠️ IMPORTANTE
 
 ### Por que AZURE_CREDENTIALS é obrigatório?
 
@@ -90,7 +94,7 @@ gh secret list
 - **Erro comum:** "Error: Input required and not supplied: username"
 - **Solução:** Sempre usar `azure/login@v2` com `creds: ${{ secrets.AZURE_CREDENTIALS }}`
 
-### Diferença dos métodos de autenticação:
+### Diferença dos métodos de autenticação
 
 | Método | Uso | Requer |
 |--------|-----|--------|
