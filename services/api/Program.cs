@@ -55,7 +55,7 @@ app.MapControllers();
 
 try
 {
-    Log.Information("Starting Shancrys API");
+    Log.Information("Starting Shancrys API with MongoDB");
     app.Run();
 }
 catch (Exception ex)
