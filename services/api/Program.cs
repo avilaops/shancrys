@@ -37,6 +37,9 @@ builder.Services.AddScoped(sp =>
     return client.GetDatabase(mongoSettings.DatabaseName);
 });
 
+// Register application services
+builder.Services.AddScoped<Shancrys.Api.Services.IAuthService, Shancrys.Api.Services.AuthService>();
+
 // Configure JWT (placeholder - implement authentication later)
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 
