@@ -32,4 +32,4 @@ jobs:
             --name ${{ env.CONTAINER_APP }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --tail 200 \
-            --type app
+            --type console
