@@ -1,71 +1,91 @@
 name: Deploy API to Azure
 
 on:
-    push:
-        branches: [main]
-        paths:
-            - "services/api/**"
-            - ".github/workflows/api-deploy.yml"
-    workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "services/api/**"
+      - ".github/workflows/api-deploy.yml"
+  workflow_dispatch:
 
 env:
-    AZURE_WEBAPP_NAME: shancrys-api
-    AZURE_WEBAPP_PACKAGE_PATH: "./services/api"
-    DOTNET_VERSION: "8.0.x"
+  AZURE_WEBAPP_NAME: shancrys-api
+  AZURE_WEBAPP_PACKAGE_PATH: "./services/api"
+  DOTNET_VERSION: "8.0.x"
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password123
+          MONGO_INITDB_DATABASE: shancrys
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-            - name: Setup .NET
-              uses: actions/setup-dotnet@v4
-              with:
-                  dotnet-version: ${{ env.DOTNET_VERSION }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Restore dependencies
-              run: dotnet restore
-              working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
-            - name: Build
-              run: dotnet build --configuration Release --no-restore
-              working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
-            - name: Test
-              run: dotnet test --no-restore --verbosity normal
-              working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-              continue-on-error: true
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+        working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        env:
+          MongoDb__ConnectionString: "mongodb://admin:password123@localhost:27017/shancrys?authSource=admin"
 
-            - name: Publish
-              run: dotnet publish --configuration Release --no-build --output ${{env.DOTNET_ROOT}}/api
-              working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+      - name: Test
+        run: dotnet test --no-restore --verbosity normal
+        working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        continue-on-error: true
+        env:
+          MongoDb__ConnectionString: "mongodb://admin:password123@localhost:27017/shancrys?authSource=admin"
+          JwtSettings__SecretKey: "test-secret-key-for-ci-minimum-32-characters-long"
 
-            - name: Upload artifact
-              uses: actions/upload-artifact@v4
-              with:
-                  name: api-artifact
-                  path: ${{env.DOTNET_ROOT}}/api
+      - name: Publish
+        run: dotnet publish --configuration Release --no-build --output ${{env.DOTNET_ROOT}}/api
+        working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
-    deploy:
-        runs-on: ubuntu-latest
-        needs: build
-        environment:
-            name: "Production"
-            url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-artifact
+          path: ${{env.DOTNET_ROOT}}/api
 
-        steps:
-            - name: Download artifact
-              uses: actions/download-artifact@v4
-              with:
-                  name: api-artifact
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: "Production"
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
-            - name: Deploy to Azure Web App
-              id: deploy-to-webapp
-              uses: azure/webapps-deploy@v3
-              with:
-                  app-name: ${{ env.AZURE_WEBAPP_NAME }}
-                  publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-                  package: .
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: api-artifact
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: .
