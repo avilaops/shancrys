@@ -76,7 +76,7 @@ Crie os seguintes secrets:
 |------------|-------|
 | `AZURE_WEBAPP_PUBLISH_PROFILE` | XML do publish profile da API |
 | `AZURE_STATIC_WEB_APPS_API_TOKEN` | Token do Static Web App |
-| `API_URL` | URL da API (ex: https://shancrys-api-dev-xxx.azurewebsites.net) |
+| `API_URL` | URL da API (ex: <https://shancrys-api-dev-xxx.azurewebsites.net>) |
 
 ## 🔗 Conectar GitHub ao Repositório
 
@@ -140,6 +140,7 @@ Invoke-RestMethod "$apiUrl/health" -Method Get
 ### DevTools
 
 Abra no navegador:
+
 ```
 https://shancrys-devtools-dev-XXXXX.azurestaticapps.net
 ```
@@ -185,6 +186,7 @@ git push origin main
 
 1. Verifique firewall rules do PostgreSQL
 2. Teste conexão:
+
 ```powershell
 Test-NetConnection -ComputerName shancrys-db-dev-xxx.postgres.database.azure.com -Port 5432
 ```

@@ -76,10 +76,10 @@ curl https://SEU-API.azurewebsites.net/health
 
 ## 🎯 URLs Após Deploy
 
-- **API:** https://shancrys-api-dev-XXX.azurewebsites.net
-- **Swagger:** https://shancrys-api-dev-XXX.azurewebsites.net/swagger
-- **DevTools:** https://shancrys-devtools-dev-XXX.azurestaticapps.net
-- **Portal Azure:** https://portal.azure.com
+- **API:** <https://shancrys-api-dev-XXX.azurewebsites.net>
+- **Swagger:** <https://shancrys-api-dev-XXX.azurewebsites.net/swagger>
+- **DevTools:** <https://shancrys-devtools-dev-XXX.azurestaticapps.net>
+- **Portal Azure:** <https://portal.azure.com>
 
 ## 📊 Recursos Criados
 

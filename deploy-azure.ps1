@@ -2,13 +2,13 @@
 # Execute: .\deploy-azure.ps1
 
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$Environment = "dev",
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$Location = "eastus2",
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$ResourceGroup = "shancrys-rg"
 )
 
@@ -36,7 +36,8 @@ Write-Host "🔍 Verificando GitHub CLI..." -ForegroundColor Yellow
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
     Write-Host "⚠️  GitHub CLI não encontrado. Instalando..." -ForegroundColor Yellow
     winget install GitHub.cli
-} else {
+}
+else {
     Write-Host "  ✓ GitHub CLI instalado" -ForegroundColor Green
 }
 
@@ -58,7 +59,8 @@ $rg = az group exists --name $ResourceGroup
 if ($rg -eq "false") {
     az group create --name $ResourceGroup --location $Location | Out-Null
     Write-Host "  ✓ Resource Group criado: $ResourceGroup" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "  ✓ Resource Group já existe: $ResourceGroup" -ForegroundColor Green
 }
 
@@ -153,7 +155,8 @@ if ($LASTEXITCODE -ne 0) {
     
     gh repo create $repoName --$visibility --source=. --remote=origin --push
     Write-Host "  ✓ Repositório criado" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "  ✓ Repositório já existe" -ForegroundColor Green
 }
 
@@ -205,21 +208,21 @@ Write-Host "   gh run list" -ForegroundColor Gray
 Write-Host "   gh run watch" -ForegroundColor Gray
 Write-Host "   gh run view --log" -ForegroundColor Gray
 Write-Host ""
-Write-Host "💡 Próximos Passos:" -ForegroundColor Yellow
+Write-Host "💡 Proximos Passos:" -ForegroundColor Yellow
 Write-Host "   1. Aguarde workflows finalizarem (5-10 min)" -ForegroundColor White
 Write-Host "   2. Acesse o Swagger e teste a API" -ForegroundColor White
 Write-Host "   3. Abra o DevTools para monitoramento" -ForegroundColor White
-Write-Host "   4. Configure domínio customizado (opcional)" -ForegroundColor White
+Write-Host "   4. Configure dominio customizado (opcional)" -ForegroundColor White
 Write-Host ""
-Write-Host "✨ Shancrys está no ar! 🚀" -ForegroundColor Green
+Write-Host "Shancrys esta no ar!" -ForegroundColor Green
 Write-Host ""
 
 # Abrir URLs
-Write-Host "🌐 Abrindo navegadores..." -ForegroundColor Yellow
+Write-Host "Abrindo navegadores..." -ForegroundColor Yellow
 Start-Sleep -Seconds 2
 Start-Process "https://portal.azure.com/#@/resource/subscriptions/$($account.id)/resourceGroups/$ResourceGroup"
 Start-Process "https://github.com/$(gh repo view --json nameWithOwner -q .nameWithOwner)/actions"
 
 Write-Host ""
 Write-Host "Pressione qualquer tecla para sair..." -ForegroundColor Gray
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+$null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
