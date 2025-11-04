@@ -1,81 +1,81 @@
 name: 🚀 Deploy Shancrys API to Azure Container Apps
 
 on:
-    push:
-        branches: [main]
-        paths:
-            - "services/api/**"
-            - ".github/workflows/deploy-azure-containerapp.yml"
-    workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "services/api/**"
+      - ".github/workflows/deploy-azure-containerapp.yml"
+  workflow_dispatch:
 
 env:
-    REGISTRY: shancrysacrdevhp7owg.azurecr.io
-    IMAGE_NAME: shancrys-api
-    RESOURCE_GROUP: shancrys-rg
-    CONTAINER_APP: shancrys-api-dev
-    ENVIRONMENT: shancrys-env
-    LOCATION: eastus2
+  REGISTRY: shancrysacrdevhp7owg.azurecr.io
+  IMAGE_NAME: shancrys-api
+  RESOURCE_GROUP: shancrys-rg
+  CONTAINER_APP: shancrys-api-dev
+  ENVIRONMENT: shancrys-env
+  LOCATION: eastus2
 
 jobs:
-    build-and-deploy:
-        name: Build, Push and Deploy
-        runs-on: ubuntu-latest
+  build-and-deploy:
+    name: Build, Push and Deploy
+    runs-on: ubuntu-latest
 
-        permissions:
-            id-token: write
-            contents: read
+    permissions:
+      id-token: write
+      contents: read
 
-        steps:
-            # 1️⃣ Checkout do repositório
-            - name: Checkout repository
-              uses: actions/checkout@v4
+    steps:
+      # 1️⃣ Checkout do repositório
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            # 2️⃣ Login no Azure via OpenID Connect (OIDC)
-            - name: Azure Login
-              uses: azure/login@v2
-              with:
-                  client-id: ${{ secrets.AZURE_CLIENT_ID }}
-                  tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-                  subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      # 2️⃣ Login no Azure via OpenID Connect (OIDC)
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-            # 3️⃣ Login no Azure Container Registry
-            - name: Login to Azure Container Registry
-              run: |
-                  echo ${{ secrets.ACR_PASSWORD }} | docker login ${{ env.REGISTRY }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
+      # 3️⃣ Login no Azure Container Registry (ACR)
+      - name: Login to Azure Container Registry
+        run: |
+          echo ${{ secrets.ACR_PASSWORD }} | docker login ${{ env.REGISTRY }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
 
-            # 4️⃣ Build e Push da imagem Docker
-            - name: Build and Push Docker Image
-              run: |
-                  cd services/api
-                  docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
-                  docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+      # 4️⃣ Build e Push da imagem Docker
+      - name: Build and Push Docker Image
+        run: |
+          cd services/api
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-            # 5️⃣ Deploy (cria ou atualiza o Container App)
-            - name: Deploy to Azure Container Apps
-              run: |
-                  az containerapp up \
-                    --name ${{ env.CONTAINER_APP }} \
-                    --resource-group ${{ env.RESOURCE_GROUP }} \
-                    --environment ${{ env.ENVIRONMENT }} \
-                    --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-                    --target-port 5000 \
-                    --ingress external \
-                    --location ${{ env.LOCATION }} \
-                    --registry-server ${{ env.REGISTRY }} \
-                    --registry-username ${{ secrets.ACR_USERNAME }} \
-                    --registry-password ${{ secrets.ACR_PASSWORD }} \
-                    --secrets mongodb-connection-string="${{ secrets.MONGODB_CONNECTION_STRING }}" \
-                              jwt-secret-key="${{ secrets.JWT_SECRET_KEY }}" \
-                              rabbitmq-password="${{ secrets.RABBITMQ_PASSWORD }}" \
-                    --env-vars ConnectionStrings__MongoConnection=secretref:mongodb-connection-string \
-                               Jwt__Secret=secretref:jwt-secret-key \
-                               RabbitMq__Password=secretref:rabbitmq-password
+      # 5️⃣ Deploy (cria ou atualiza o Container App)
+      - name: Deploy to Azure Container Apps
+        run: |
+          az containerapp up \
+            --name ${{ env.CONTAINER_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --environment ${{ env.ENVIRONMENT }} \
+            --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --target-port 5000 \
+            --ingress external \
+            --location ${{ env.LOCATION }} \
+            --registry-server ${{ env.REGISTRY }} \
+            --registry-username ${{ secrets.ACR_USERNAME }} \
+            --registry-password ${{ secrets.ACR_PASSWORD }} \
+            --secrets mongodb-connection-string="${{ secrets.MONGODB_CONNECTION_STRING }}" \
+                      jwt-secret-key="${{ secrets.JWT_SECRET_KEY }}" \
+                      rabbitmq-password="${{ secrets.RABBITMQ_PASSWORD }}" \
+            --env-vars ConnectionStrings__MongoConnection=secretref:mongodb-connection-string \
+                       Jwt__Secret=secretref:jwt-secret-key \
+                       RabbitMq__Password=secretref:rabbitmq-password
 
-            # 6️⃣ Exibir URL final da API
-            - name: Show API URL
-              run: |
-                  echo "🌐 API URL:"
-                  az containerapp show \
-                    -n ${{ env.CONTAINER_APP }} \
-                    -g ${{ env.RESOURCE_GROUP }} \
-                    --query properties.configuration.ingress.fqdn -o tsv
+      # 6️⃣ Exibir URL final da API
+      - name: Show API URL
+        run: |
+          echo "🌐 API URL:"
+          az containerapp show \
+            -n ${{ env.CONTAINER_APP }} \
+            -g ${{ env.RESOURCE_GROUP }} \
+            --query properties.configuration.ingress.fqdn -o tsv
