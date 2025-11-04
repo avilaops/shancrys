@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 using Shancrys.Api.Data;
 using Shancrys.Api.Middleware;
 using Shancrys.Api.Models;
@@ -12,12 +12,12 @@ namespace Shancrys.Api.Controllers;
 [Authorize]
 public class ProjectsController : ControllerBase
 {
-    private readonly ShancrysDbContext _context;
+    private readonly IMongoDbContext _context;
     private readonly ITenantService _tenantService;
     private readonly ILogger<ProjectsController> _logger;
 
     public ProjectsController(
-        ShancrysDbContext context,
+        IMongoDbContext context,
         ITenantService tenantService,
         ILogger<ProjectsController> logger)
     {
@@ -36,16 +36,20 @@ public class ProjectsController : ControllerBase
         if (tenantId == null)
             return Unauthorized(new { message = "Tenant not identified" });
 
-        var query = _context.Projects.Where(p => p.TenantId == tenantId);
+        var filterBuilder = Builders<Project>.Filter;
+        var filter = filterBuilder.Eq(p => p.TenantId, tenantId.Value);
 
         if (status.HasValue)
-            query = query.Where(p => p.Status == status.Value);
+        {
+            filter = filter & filterBuilder.Eq(p => p.Status, status.Value);
+        }
 
-        var total = await query.CountAsync();
-        var items = await query
-            .OrderByDescending(p => p.CreatedAt)
+        var total = await _context.Projects.CountDocumentsAsync(filter);
+        var items = await _context.Projects
+            .Find(filter)
+            .SortByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .Limit(pageSize)
             .ToListAsync();
 
         return Ok(new
@@ -74,8 +78,7 @@ public class ProjectsController : ControllerBase
             Status = ProjectStatus.Planning
         };
 
-        _context.Projects.Add(project);
-        await _context.SaveChangesAsync();
+        await _context.Projects.InsertOneAsync(project);
 
         _logger.LogInformation("Project {ProjectId} created by tenant {TenantId}", project.Id, tenantId);
 
@@ -89,8 +92,10 @@ public class ProjectsController : ControllerBase
         if (tenantId == null)
             return Unauthorized();
 
-        var project = await _context.Projects
-            .FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId);
+        var filter = Builders<Project>.Filter.Eq(p => p.Id, id) & 
+                     Builders<Project>.Filter.Eq(p => p.TenantId, tenantId.Value);
+
+        var project = await _context.Projects.Find(filter).FirstOrDefaultAsync();
 
         if (project == null)
             return NotFound();

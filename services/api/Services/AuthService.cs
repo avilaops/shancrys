@@ -4,6 +4,8 @@ using System.Security.Claims;
 using System.Text;
 using Shancrys.Api.Models;
 using System.IdentityModel.Tokens.Jwt;
+using Shancrys.Api.Data;
+using MongoDB.Driver;
 
 namespace Shancrys.Api.Services;
 
@@ -18,11 +20,13 @@ public class AuthService : IAuthService
 {
     private readonly IConfiguration _configuration;
     private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly IMongoDbContext _dbContext;
 
-    public AuthService(IConfiguration configuration, IPasswordHasher<User> passwordHasher)
+    public AuthService(IConfiguration configuration, IPasswordHasher<User> passwordHasher, IMongoDbContext dbContext)
     {
         _configuration = configuration;
         _passwordHasher = passwordHasher;
+        _dbContext = dbContext;
     }
 
     public Task<(bool Success, string? Token, string? RefreshToken, User? User, string? Error)> LoginAsync(string email, string password)
@@ -51,8 +55,15 @@ public class AuthService : IAuthService
         return Task.FromResult<(bool, string?, string?, User?, string?)>((true, token, null, mockUser, null));
     }
 
-    public Task<(bool Success, User? User, string? Error)> RegisterAsync(string email, string password, string name, Guid tenantId, List<string> roles)
+    public async Task<(bool Success, User? User, string? Error)> RegisterAsync(string email, string password, string name, Guid tenantId, List<string> roles)
     {
+        // Verificar se o usuário já existe
+        var existingUser = await _dbContext.Users.Find(u => u.Email == email).FirstOrDefaultAsync();
+        if (existingUser != null)
+        {
+            return (false, null, "Email já cadastrado");
+        }
+
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -66,9 +77,10 @@ public class AuthService : IAuthService
 
         user.PasswordHash = _passwordHasher.HashPassword(user, password);
 
-        // TODO: Salvar no banco via DbContext
+        // Salvar no MongoDB
+        await _dbContext.Users.InsertOneAsync(user);
         
-        return Task.FromResult<(bool, User?, string?)>((true, user, null));
+        return (true, user, null);
     }
 
     public string GenerateJwtToken(User user)

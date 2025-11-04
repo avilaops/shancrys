@@ -106,6 +106,12 @@ Thumbs.db
 appsettings.Development.json
 appsettings.*.json
 !appsettings.json
+*.secrets.json
+
+## Azure
+*.pubxml
+*.azurePubxml
+*.PublishSettings
 
 ## Database
 *.db

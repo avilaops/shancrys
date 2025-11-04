@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 using Shancrys.Api.Data;
 using Shancrys.Api.Middleware;
 using Shancrys.Api.Models;
@@ -12,12 +12,12 @@ namespace Shancrys.Api.Controllers;
 [Authorize]
 public class ElementsController : ControllerBase
 {
-    private readonly ShancrysDbContext _context;
+    private readonly IMongoDbContext _context;
     private readonly ITenantService _tenantService;
     private readonly ILogger<ElementsController> _logger;
 
     public ElementsController(
-        ShancrysDbContext context,
+        IMongoDbContext context,
         ITenantService tenantService,
         ILogger<ElementsController> logger)
     {
