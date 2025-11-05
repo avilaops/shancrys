@@ -15,6 +15,11 @@
 - **[Especificação API](../specs/api-openapi.yaml)** - OpenAPI 3.1 completo
 - **[Escopo MVP](../specs/mvp.md)** - Funcionalidades e critérios de sucesso
 
+## 📈 Estratégia de Marketing
+
+- **[Estratégia Completa](./marketing-strategy.md)** - Análise de mercado, personas, canais, precificação, go-to-market
+- **[Resumo Executivo](./marketing-summary.md)** - Síntese da estratégia de marketing e metas 2025
+
 ## 📋 ADRs (Architecture Decision Records)
 
 Decisões arquiteturais documentadas em ordem cronológica:
@@ -152,6 +157,7 @@ App Field → SQLite local → Fila pendente → Worker sync → API REST
 
 | Data | Versão | Mudanças |
 |------|--------|----------|
+| Nov 2024 | 1.1 | Adicionada estratégia de marketing completa |
 | Nov 2024 | 1.0 | Estrutura inicial, ADRs 1-7, MVP especificado |
 
 ---
