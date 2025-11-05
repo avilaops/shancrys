@@ -19,6 +19,7 @@
 
 - **[Estratégia Completa](./marketing-strategy.md)** - Análise de mercado, personas, canais, precificação, go-to-market
 - **[Resumo Executivo](./marketing-summary.md)** - Síntese da estratégia de marketing e metas 2025
+- **[Checklist de Ação](./marketing-action-checklist.md)** - Guia prático de implementação com tarefas e prazos
 
 ## 📋 ADRs (Architecture Decision Records)
 
