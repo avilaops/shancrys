@@ -151,6 +151,9 @@ public class HealthController : ControllerBase
                 return status;
             }
 
+            // Note: This creates a new connection for each health check.
+            // For production, consider implementing connection pooling or a singleton
+            // connection manager to reduce overhead under high load.
             var factory = new ConnectionFactory
             {
                 HostName = rabbitMqSettings.HostName,
@@ -191,41 +194,29 @@ public class HealthController : ControllerBase
 
     private ServiceHealthStatus? CheckRedisHealth()
     {
-        var stopwatch = Stopwatch.StartNew();
+        var redisConnectionString = _configuration.GetConnectionString("Redis");
+        if (string.IsNullOrEmpty(redisConnectionString))
+        {
+            // Redis is optional, not configured
+            _logger.LogDebug("Redis is not configured");
+            return null;
+        }
+
+        // Redis health check not implemented yet
+        // When needed, add StackExchange.Redis package and implement proper health check
         var status = new ServiceHealthStatus
         {
             Name = "Redis",
-            Healthy = false
-        };
-
-        try
-        {
-            var redisConnectionString = _configuration.GetConnectionString("Redis");
-            if (string.IsNullOrEmpty(redisConnectionString))
+            Healthy = false,
+            Error = "Redis health check requires StackExchange.Redis package to be implemented",
+            Details = new Dictionary<string, string>
             {
-                // Redis is optional, not configured
-                _logger.LogDebug("Redis is not configured");
-                return null;
+                ["status"] = "not_implemented",
+                ["message"] = "Add StackExchange.Redis NuGet package to enable this health check"
             }
-
-            // Since we don't have StackExchange.Redis as a dependency yet,
-            // we'll just mark it as "not configured" for now
-            status.Error = "Redis health check requires StackExchange.Redis package";
-            status.Details = new Dictionary<string, string>
-            {
-                ["status"] = "not_implemented"
-            };
-            
-            _logger.LogWarning("Redis health check not implemented");
-        }
-        catch (Exception ex)
-        {
-            stopwatch.Stop();
-            status.Error = $"Connection check failed: {ex.Message}";
-            status.ResponseTime = $"{stopwatch.ElapsedMilliseconds}ms";
-            _logger.LogError(ex, "Redis health check failed");
-        }
-
+        };
+        
+        _logger.LogDebug("Redis health check not implemented - StackExchange.Redis package required");
         return status;
     }
 }

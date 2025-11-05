@@ -1,5 +1,8 @@
 version: '3.8'
 
+# WARNING: This configuration uses hardcoded credentials for development only.
+# For production, use environment variables or Docker secrets to manage sensitive data.
+
 services:
   postgres:
     image: postgres:16-alpine
