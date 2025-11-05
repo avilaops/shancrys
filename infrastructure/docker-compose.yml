@@ -50,6 +50,23 @@ services:
       timeout: 5s
       retries: 5
 
+  mongodb:
+    image: mongo:7.0
+    container_name: shancrys-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: shancrys
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: ../services/api
@@ -59,6 +76,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:5000
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=shancrys;Username=postgres;Password=postgres"
+      MongoDb__ConnectionString: "mongodb://admin:admin123@mongodb:27017"
       RabbitMQ__HostName: rabbitmq
       JwtSettings__SecretKey: "dev-secret-key-minimum-32-chars-long-change-in-production"
     ports:
@@ -70,9 +88,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mongodb:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
   postgres_data:
   rabbitmq_data:
   redis_data:
+  mongodb_data:
