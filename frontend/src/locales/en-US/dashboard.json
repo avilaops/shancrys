@@ -1,0 +1,61 @@
+{
+    "title": "Dashboard",
+    "welcome": "Welcome, {{name}}!",
+    "overview": "Overview",
+    "projects": "Projects",
+    "project": "Project",
+    "newProject": "New Project",
+    "myProjects": "My Projects",
+    "recentProjects": "Recent Projects",
+    "allProjects": "All Projects",
+    "stats": {
+        "totalProjects": "Total Projects",
+        "activeModels": "Active Models",
+        "teamMembers": "Team Members",
+        "storage": "Storage",
+        "storageUsed": "{{used}} of {{total}} used"
+    },
+    "actions": {
+        "view": "View",
+        "edit": "Edit",
+        "delete": "Delete",
+        "share": "Share",
+        "export": "Export",
+        "duplicate": "Duplicate",
+        "archive": "Archive",
+        "restore": "Restore"
+    },
+    "status": {
+        "active": "Active",
+        "completed": "Completed",
+        "onHold": "On Hold",
+        "archived": "Archived"
+    },
+    "filters": {
+        "all": "All",
+        "active": "Active",
+        "completed": "Completed",
+        "archived": "Archived",
+        "sortBy": "Sort by",
+        "name": "Name",
+        "date": "Date",
+        "size": "Size",
+        "status": "Status"
+    },
+    "activity": {
+        "title": "Recent Activities",
+        "noActivity": "No recent activity",
+        "uploadedModel": "uploaded the model",
+        "createdProject": "created the project",
+        "sharedWith": "shared with",
+        "completedQuantification": "completed quantification in",
+        "updatedModel": "updated the model"
+    },
+    "messages": {
+        "projectCreated": "Project created successfully",
+        "projectDeleted": "Project deleted",
+        "projectUpdated": "Project updated",
+        "noProjects": "You don't have any projects yet",
+        "createFirst": "Create your first project to get started"
+    }
+}

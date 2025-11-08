@@ -1,0 +1,61 @@
+{
+    "title": "Panel de Control",
+    "welcome": "¡Bienvenido, {{name}}!",
+    "overview": "Resumen",
+    "projects": "Proyectos",
+    "project": "Proyecto",
+    "newProject": "Nuevo Proyecto",
+    "myProjects": "Mis Proyectos",
+    "recentProjects": "Proyectos Recientes",
+    "allProjects": "Todos los Proyectos",
+    "stats": {
+        "totalProjects": "Total de Proyectos",
+        "activeModels": "Modelos Activos",
+        "teamMembers": "Miembros del Equipo",
+        "storage": "Almacenamiento",
+        "storageUsed": "{{used}} de {{total}} usado"
+    },
+    "actions": {
+        "view": "Ver",
+        "edit": "Editar",
+        "delete": "Eliminar",
+        "share": "Compartir",
+        "export": "Exportar",
+        "duplicate": "Duplicar",
+        "archive": "Archivar",
+        "restore": "Restaurar"
+    },
+    "status": {
+        "active": "Activo",
+        "completed": "Completado",
+        "onHold": "En Espera",
+        "archived": "Archivado"
+    },
+    "filters": {
+        "all": "Todos",
+        "active": "Activos",
+        "completed": "Completados",
+        "archived": "Archivados",
+        "sortBy": "Ordenar por",
+        "name": "Nombre",
+        "date": "Fecha",
+        "size": "Tamaño",
+        "status": "Estado"
+    },
+    "activity": {
+        "title": "Actividades Recientes",
+        "noActivity": "Sin actividad reciente",
+        "uploadedModel": "subió el modelo",
+        "createdProject": "creó el proyecto",
+        "sharedWith": "compartió con",
+        "completedQuantification": "completó la cuantificación en",
+        "updatedModel": "actualizó el modelo"
+    },
+    "messages": {
+        "projectCreated": "Proyecto creado exitosamente",
+        "projectDeleted": "Proyecto eliminado",
+        "projectUpdated": "Proyecto actualizado",
+        "noProjects": "Aún no tienes proyectos",
+        "createFirst": "Crea tu primer proyecto para comenzar"
+    }
+}

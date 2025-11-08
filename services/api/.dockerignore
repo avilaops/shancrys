@@ -1,0 +1,15 @@
+# Ignore arquivos desnecessários no build
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/node_modules/
+**/.git/
+**/.gitignore
+**/.dockerignore
+**/docker-compose*.yml
+**/Dockerfile*
+**/*.md
+**/TestAuth.cs
+**/test-auth.ps1
+**/*.log

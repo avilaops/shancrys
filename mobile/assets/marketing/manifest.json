@@ -1,0 +1,104 @@
+{
+    "name": "Shancrys BIM",
+    "short_name": "SBIM",
+    "description": "Gestão inteligente de obras com metodologia BIM. Planejamento, orçamento e controle de projetos de construção civil.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#FFFFFF",
+    "theme_color": "#0066CC",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "./icons/web/pwa-icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "./icons/web/pwa-icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": [
+        "business",
+        "productivity",
+        "utilities"
+    ],
+    "screenshots": [
+        {
+            "src": "./screenshots/ios/01-login.png",
+            "sizes": "1290x2796",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Login Screen"
+        },
+        {
+            "src": "./screenshots/ios/02-projects.png",
+            "sizes": "1290x2796",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Projects Dashboard"
+        },
+        {
+            "src": "./screenshots/ios/03-project-detail.png",
+            "sizes": "1290x2796",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Project Details"
+        },
+        {
+            "src": "./screenshots/ios/04-materials.png",
+            "sizes": "1290x2796",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Materials Catalog"
+        },
+        {
+            "src": "./screenshots/ios/05-profile.png",
+            "sizes": "1290x2796",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "User Profile"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "New Project",
+            "short_name": "New",
+            "description": "Create a new construction project",
+            "url": "/projects/new",
+            "icons": [
+                {
+                    "src": "./icons/web/pwa-icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Materials",
+            "short_name": "Materials",
+            "description": "Browse materials catalog",
+            "url": "/materials",
+            "icons": [
+                {
+                    "src": "./icons/web/pwa-icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ],
+    "related_applications": [
+        {
+            "platform": "play",
+            "url": "https://play.google.com/store/apps/details?id=com.shancrys.bim",
+            "id": "com.shancrys.bim"
+        },
+        {
+            "platform": "itunes",
+            "url": "https://apps.apple.com/app/shancrys-bim/id0000000000"
+        }
+    ],
+    "prefer_related_applications": true
+}

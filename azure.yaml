@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: shancrys
+metadata:
+  template: shancrys-4d-platform@0.1.0
+
+services:
+  api:
+    project: ./services/api
+    language: csharp
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: ./
+
+  frontend:
+    project: ./frontend
+    language: js
+    host: staticwebapp
+    dist: dist
+
+  devtools:
+    project: ./devtools
+    language: js
+    host: staticwebapp
+    dist: dist
+
+infra:
+  provider: bicep
+  path: ./infra
+  module: main
+
+pipeline:
+  provider: github

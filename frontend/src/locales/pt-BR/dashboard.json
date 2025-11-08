@@ -1,0 +1,61 @@
+{
+    "title": "Dashboard",
+    "welcome": "Bem-vindo, {{name}}!",
+    "overview": "Visão Geral",
+    "projects": "Projetos",
+    "project": "Projeto",
+    "newProject": "Novo Projeto",
+    "myProjects": "Meus Projetos",
+    "recentProjects": "Projetos Recentes",
+    "allProjects": "Todos os Projetos",
+    "stats": {
+        "totalProjects": "Total de Projetos",
+        "activeModels": "Modelos Ativos",
+        "teamMembers": "Membros da Equipe",
+        "storage": "Armazenamento",
+        "storageUsed": "{{used}} de {{total}} usado"
+    },
+    "actions": {
+        "view": "Visualizar",
+        "edit": "Editar",
+        "delete": "Excluir",
+        "share": "Compartilhar",
+        "export": "Exportar",
+        "duplicate": "Duplicar",
+        "archive": "Arquivar",
+        "restore": "Restaurar"
+    },
+    "status": {
+        "active": "Ativo",
+        "completed": "Concluído",
+        "onHold": "Em Espera",
+        "archived": "Arquivado"
+    },
+    "filters": {
+        "all": "Todos",
+        "active": "Ativos",
+        "completed": "Concluídos",
+        "archived": "Arquivados",
+        "sortBy": "Ordenar por",
+        "name": "Nome",
+        "date": "Data",
+        "size": "Tamanho",
+        "status": "Status"
+    },
+    "activity": {
+        "title": "Atividades Recentes",
+        "noActivity": "Nenhuma atividade recente",
+        "uploadedModel": "enviou o modelo",
+        "createdProject": "criou o projeto",
+        "sharedWith": "compartilhou com",
+        "completedQuantification": "completou a quantificação em",
+        "updatedModel": "atualizou o modelo"
+    },
+    "messages": {
+        "projectCreated": "Projeto criado com sucesso",
+        "projectDeleted": "Projeto excluído",
+        "projectUpdated": "Projeto atualizado",
+        "noProjects": "Você ainda não tem projetos",
+        "createFirst": "Crie seu primeiro projeto para começar"
+    }
+}

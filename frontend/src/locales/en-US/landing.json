@@ -1,0 +1,100 @@
+{
+    "title": "Shancrys BIM",
+    "subtitle": "Intelligent Construction Management Platform",
+    "description": "3D visualization of IFC models, automatic quantification, 4D planning and collaborative management in a single platform.",
+    "cta": {
+        "start": "Start Free",
+        "demo": "Request Demo",
+        "learn": "Learn More"
+    },
+    "features": {
+        "title": "Features",
+        "subtitle": "Everything you need to manage BIM projects",
+        "viewer3d": {
+            "title": "Advanced 3D Viewer",
+            "description": "Smooth navigation in IFC models with intuitive controls and high-quality rendering."
+        },
+        "quantification": {
+            "title": "Automatic Quantification",
+            "description": "Extract material quantities automatically and export to Excel or CSV."
+        },
+        "measurement": {
+            "title": "Measurement Tools",
+            "description": "Measure distances, areas and angles directly on the 3D model with millimetric precision."
+        },
+        "timeline": {
+            "title": "4D Timeline",
+            "description": "Visualize the construction schedule integrated with the 3D model for better planning."
+        },
+        "collaboration": {
+            "title": "Real-Time Collaboration",
+            "description": "Work as a team with version control and granular permissions."
+        },
+        "reports": {
+            "title": "Smart Reports",
+            "description": "Generate custom reports with charts and analytics automatically."
+        }
+    },
+    "pricing": {
+        "title": "Plans and Pricing",
+        "subtitle": "Choose the ideal plan for your needs",
+        "free": {
+            "name": "Free",
+            "price": "$0",
+            "period": "/month",
+            "description": "To get started and test the platform",
+            "features": [
+                "1 project",
+                "Basic 3D viewer",
+                "Up to 100 MB storage",
+                "Email support"
+            ],
+            "cta": "Get Started"
+        },
+        "pro": {
+            "name": "Professional",
+            "price": "$19",
+            "period": "/month",
+            "description": "For professionals and small teams",
+            "features": [
+                "10 projects",
+                "All advanced tools",
+                "5 GB storage",
+                "Unlimited quantification",
+                "Priority support"
+            ],
+            "cta": "Subscribe Pro",
+            "popular": "Most Popular"
+        },
+        "enterprise": {
+            "name": "Enterprise",
+            "price": "Custom",
+            "period": "",
+            "description": "For large organizations",
+            "features": [
+                "Unlimited projects",
+                "Unlimited storage",
+                "Custom API",
+                "24/7 support",
+                "Dedicated training"
+            ],
+            "cta": "Contact Sales"
+        }
+    },
+    "footer": {
+        "product": "Product",
+        "features": "Features",
+        "pricing": "Pricing",
+        "docs": "Documentation",
+        "api": "API",
+        "company": "Company",
+        "about": "About",
+        "blog": "Blog",
+        "careers": "Careers",
+        "contact": "Contact",
+        "legal": "Legal",
+        "privacy": "Privacy",
+        "terms": "Terms of Use",
+        "copyright": "© 2025 Shancrys. All rights reserved."
+    }
+}

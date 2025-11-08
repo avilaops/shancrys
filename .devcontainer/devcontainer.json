@@ -1,0 +1,39 @@
+{
+    "name": "Shancrys Dev",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers/features/azure-cli:1": {},
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "20"
+        },
+        "ghcr.io/devcontainers/features/dotnet:2": {
+            "version": "8.0"
+        }
+    },
+    "remoteEnv": {
+        "FOURD_API_TOKEN": "${localEnv:FOURD_API_TOKEN}",
+        "BIM_DB_URI": "${localEnv:BIM_DB_URI}",
+        "AZURE_CREDENTIALS": "${localEnv:AZURE_CREDENTIALS}"
+    },
+    "mounts": [
+        "source=shancrys-nuget-cache,target=/home/vscode/.nuget/packages,type=volume"
+    ],
+    "postCreateCommand": "npm ci --prefix frontend && npm ci --prefix devtools && dotnet restore Shancrys.sln",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-azuretools.vscode-azurecli",
+                "ms-dotnettools.csharp",
+                "dbaeumer.vscode-eslint",
+                "github.vscode-github-actions"
+            ],
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "dotnet.defaultSolution": "Shancrys.sln"
+            }
+        }
+    }
+}

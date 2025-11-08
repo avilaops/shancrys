@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shancrys BIM - Gestão Inteligente de Obras</title>
+    <meta name="description"
+        content="Planejamento preciso, orçamentos inteligentes e gestão eficiente de projetos de construção civil com metodologia BIM. Disponível para iOS e Android.">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.shancrys.com/">
+    <meta property="og:title" content="Shancrys BIM - Gestão Inteligente de Obras">
+    <meta property="og:description"
+        content="Transforme a forma como você gerencia projetos de construção civil com o poder da metodologia BIM na palma da sua mão.">
+    <meta property="og:image" content="https://www.shancrys.com/assets/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://www.shancrys.com/">
+    <meta property="twitter:title" content="Shancrys BIM - Gestão Inteligente de Obras">
+    <meta property="twitter:description"
+        content="Transforme a forma como você gerencia projetos de construção civil com o poder da metodologia BIM na palma da sua mão.">
+    <meta property="twitter:image" content="https://www.shancrys.com/assets/twitter-image.png">
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/web/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/icons/web/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/web/apple-touch-icon.png">
+
+    <!-- PWA -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0066CC">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #1C1C1E;
+            background: #F5F5F7;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #0066CC 0%, #004499 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .hero p {
+            font-size: 20px;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #0066CC;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            color: #0066CC;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 20px;
+            background: white;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 36px;
+            margin-bottom: 60px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+
+        .feature-card {
+            text-align: center;
+            padding: 30px;
+            border-radius: 16px;
+            background: #F5F5F7;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #0066CC;
+        }
+
+        .feature-card p {
+            color: #8E8E93;
+        }
+
+        /* Screenshots Section */
+        .screenshots {
+            padding: 80px 20px;
+            background: #F5F5F7;
+        }
+
+        .screenshots h2 {
+            text-align: center;
+            font-size: 36px;
+            margin-bottom: 60px;
+        }
+
+        .screenshots-slider {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding: 20px 0;
+            scroll-snap-type: x mandatory;
+        }
+
+        .screenshot-item {
+            flex: 0 0 300px;
+            scroll-snap-align: center;
+        }
+
+        .screenshot-item img {
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Pricing Section */
+        .pricing {
+            padding: 80px 20px;
+            background: white;
+        }
+
+        .pricing h2 {
+            text-align: center;
+            font-size: 36px;
+            margin-bottom: 60px;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            border: 2px solid #E5E5EA;
+            border-radius: 16px;
+            padding: 40px 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-card:hover {
+            border-color: #0066CC;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 102, 204, 0.1);
+        }
+
+        .pricing-card.featured {
+            border-color: #0066CC;
+            background: linear-gradient(135deg, #0066CC 0%, #004499 100%);
+            color: white;
+        }
+
+        .pricing-card h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .pricing-card .price {
+            font-size: 48px;
+            font-weight: 700;
+            margin: 20px 0;
+        }
+
+        .pricing-card ul {
+            list-style: none;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .pricing-card li {
+            padding: 10px 0;
+            border-bottom: 1px solid #E5E5EA;
+        }
+
+        .pricing-card.featured li {
+            border-bottom-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 80px 20px;
+            background: linear-gradient(135deg, #0066CC 0%, #004499 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        .cta-section p {
+            font-size: 20px;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        /* Footer */
+        footer {
+            background: #1C1C1E;
+            color: white;
+            padding: 60px 20px 30px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-column h4 {
+            margin-bottom: 20px;
+            color: #0066CC;
+        }
+
+        .footer-column ul {
+            list-style: none;
+        }
+
+        .footer-column li {
+            margin-bottom: 10px;
+        }
+
+        .footer-column a {
+            color: #8E8E93;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-column a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid #333;
+            color: #8E8E93;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .hero p {
+                font-size: 18px;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>Gerencie Obras com Inteligência BIM</h1>
+            <p>Planejamento preciso, orçamentos inteligentes e gestão eficiente de projetos de construção civil na palma
+                da sua mão</p>
+            <div class="cta-buttons">
+                <a href="#" class="btn btn-primary">
+                    📱 Baixar para iOS
+                </a>
+                <a href="#" class="btn btn-secondary">
+                    🤖 Baixar para Android
+                </a>
+            </div>
+            <p style="margin-top: 20px; font-size: 14px;">⭐⭐⭐⭐⭐ 4.9/5 - Mais de 10.000 downloads</p>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <h2>Recursos Poderosos</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🏢</div>
+                    <h3>Gestão de Projetos</h3>
+                    <p>Gerencie múltiplos projetos BIM com visualização 3D e acompanhamento em tempo real</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">💰</div>
+                    <h3>Orçamento Inteligente</h3>
+                    <p>Catálogo com +10.000 materiais e cálculo automático de quantitativos via BIM</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Cronograma Visual</h3>
+                    <p>Planejamento interativo com alertas de prazos e gestão de recursos</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📦</div>
+                    <h3>Controle de Materiais</h3>
+                    <p>Estoque em tempo real com previsão de compras e histórico de preços</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🤝</div>
+                    <h3>Colaboração</h3>
+                    <p>Sincronização instantânea e compartilhamento seguro de documentos</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Segurança Total</h3>
+                    <p>Criptografia de ponta a ponta e conformidade com LGPD</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Screenshots Section -->
+    <section class="screenshots">
+        <div class="container">
+            <h2>Veja o App em Ação</h2>
+            <div class="screenshots-slider">
+                <div class="screenshot-item">
+                    <img src="./assets/screenshots/ios/01-login.png" alt="Tela de Login">
+                </div>
+                <div class="screenshot-item">
+                    <img src="./assets/screenshots/ios/02-projects.png" alt="Lista de Projetos">
+                </div>
+                <div class="screenshot-item">
+                    <img src="./assets/screenshots/ios/03-project-detail.png" alt="Detalhes do Projeto">
+                </div>
+                <div class="screenshot-item">
+                    <img src="./assets/screenshots/ios/04-materials.png" alt="Catálogo de Materiais">
+                </div>
+                <div class="screenshot-item">
+                    <img src="./assets/screenshots/ios/05-profile.png" alt="Perfil do Usuário">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing">
+        <div class="container">
+            <h2>Planos para Todos</h2>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Gratuito</h3>
+                    <div class="price">R$ 0</div>
+                    <p>por mês</p>
+                    <ul>
+                        <li>✅ 1 projeto ativo</li>
+                        <li>✅ 100 materiais</li>
+                        <li>✅ Catálogo completo</li>
+                        <li>✅ Cronograma básico</li>
+                        <li>❌ Visualização 3D</li>
+                        <li>❌ Relatórios avançados</li>
+                    </ul>
+                    <a href="#" class="btn btn-secondary">Começar Grátis</a>
+                </div>
+
+                <div class="pricing-card featured">
+                    <h3>Profissional</h3>
+                    <div class="price">R$ 49</div>
+                    <p>por mês</p>
+                    <ul>
+                        <li>✅ 10 projetos ativos</li>
+                        <li>✅ Materiais ilimitados</li>
+                        <li>✅ Visualização 3D/AR</li>
+                        <li>✅ Relatórios avançados</li>
+                        <li>✅ Suporte prioritário</li>
+                        <li>✅ Integrações BIM</li>
+                    </ul>
+                    <a href="#" class="btn btn-primary">Assinar Agora</a>
+                </div>
+
+                <div class="pricing-card">
+                    <h3>Empresarial</h3>
+                    <div class="price">R$ 199</div>
+                    <p>por mês</p>
+                    <ul>
+                        <li>✅ Projetos ilimitados</li>
+                        <li>✅ Equipe ilimitada</li>
+                        <li>✅ API completa</li>
+                        <li>✅ White label</li>
+                        <li>✅ Gerente dedicado</li>
+                        <li>✅ SLA garantido</li>
+                    </ul>
+                    <a href="#" class="btn btn-secondary">Falar com Vendas</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>Pronto para Transformar sua Gestão?</h2>
+            <p>Teste grátis por 14 dias. Sem cartão de crédito necessário.</p>
+            <div class="cta-buttons">
+                <a href="#" class="btn btn-primary">
+                    Começar Agora
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <h4>Produto</h4>
+                    <ul>
+                        <li><a href="#features">Recursos</a></li>
+                        <li><a href="#pricing">Preços</a></li>
+                        <li><a href="#integrations">Integrações</a></li>
+                        <li><a href="#updates">Atualizações</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Suporte</h4>
+                    <ul>
+                        <li><a href="#help">Central de Ajuda</a></li>
+                        <li><a href="#docs">Documentação</a></li>
+                        <li><a href="#tutorials">Tutoriais</a></li>
+                        <li><a href="#contact">Contato</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Empresa</h4>
+                    <ul>
+                        <li><a href="#about">Sobre Nós</a></li>
+                        <li><a href="#careers">Carreiras</a></li>
+                        <li><a href="#blog">Blog</a></li>
+                        <li><a href="#press">Imprensa</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="./PRIVACY_POLICY.md">Privacidade</a></li>
+                        <li><a href="./TERMS_OF_SERVICE.md">Termos</a></li>
+                        <li><a href="#cookies">Cookies</a></li>
+                        <li><a href="#licenses">Licenças</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>© 2025 Shancrys Inc. Todos os direitos reservados.</p>
+                <p>Contato: nicolas@avila.inc</p>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

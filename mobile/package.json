@@ -1,0 +1,40 @@
+{
+  "name": "mobile-temp",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "start:clear": "expo start --clear",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "test": "jest",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "build:ios": "eas build --platform ios",
+    "build:android": "eas build --platform android",
+    "build:all": "eas build --platform all",
+    "submit:ios": "eas submit --platform ios",
+    "submit:android": "eas submit --platform android"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "expo": "~54.0.22",
+    "expo-constants": "~18.0.10",
+    "expo-linking": "~8.0.8",
+    "expo-router": "~6.0.14",
+    "expo-secure-store": "~15.0.7",
+    "expo-status-bar": "~3.0.8",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.0",
+    "sharp": "^0.34.5",
+    "typescript": "~5.9.2"
+  },
+  "private": true
+}

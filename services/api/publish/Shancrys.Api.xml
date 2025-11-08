@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Shancrys.Api</name>
+    </assembly>
+    <members>
+        <member name="M:Shancrys.Api.Controllers.BillingController.GetPlans">
+            <summary>
+            Get all available subscription plans
+            </summary>
+        </member>
+        <member name="M:Shancrys.Api.Controllers.BillingController.GetPlan(System.String)">
+            <summary>
+            Get plan by ID
+            </summary>
+        </member>
+        <member name="M:Shancrys.Api.Controllers.BillingController.GetSubscription">
+            <summary>
+            Get current subscription for tenant
+            </summary>
+        </member>
+        <member name="M:Shancrys.Api.Controllers.BillingController.CreateSubscription(Shancrys.Api.Controllers.CreateSubscriptionRequest)">
+            <summary>
+            Create new subscription
+            </summary>
+        </member>
+        <member name="M:Shancrys.Api.Controllers.BillingController.CancelSubscription(Shancrys.Api.Controllers.CancelSubscriptionRequest)">
+            <summary>
+            Cancel subscription
+            </summary>
+        </member>
+        <member name="M:Shancrys.Api.Controllers.BillingController.ReactivateSubscription">
+            <summary>
+            Reactivate canceled subscription
+            </summary>
+        </member>
+        <member name="M:Shancrys.Api.Controllers.BillingController.ChangePlan(Shancrys.Api.Controllers.ChangePlanRequest)">
+            <summary>
+            Change subscription plan
+            </summary>
+        </member>
+        <member name="M:Shancrys.Api.Controllers.BillingController.GetInvoices(System.Int32)">
+            <summary>
+            Get invoices for current tenant
+            </summary>
+        </member>
+        <member name="M:Shancrys.Api.Controllers.BillingController.CreateCheckoutSession(Shancrys.Api.Controllers.CheckoutRequest)">
+            <summary>
+            Create Stripe Checkout session
+            </summary>
+        </member>
+        <member name="M:Shancrys.Api.Controllers.BillingController.CreatePortalSession(Shancrys.Api.Controllers.PortalRequest)">
+            <summary>
+            Create Stripe Customer Portal session
+            </summary>
+        </member>
+        <member name="M:Shancrys.Api.Controllers.BillingController.GetUsage">
+            <summary>
+            Get usage statistics for current tenant
+            </summary>
+        </member>
+        <member name="M:Shancrys.Api.Controllers.BillingController.StripeWebhook">
+            <summary>
+            Stripe webhook endpoint
+            </summary>
+        </member>
+    </members>
+</doc>

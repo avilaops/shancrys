@@ -1,0 +1,195 @@
+version: '3.8'
+
+# ============================================================================
+# SHANCRYS 4D PLATFORM - DOCKER COMPOSE CONFIGURATION
+# ============================================================================
+# Serviços:
+#   - MongoDB       → Banco de dados principal (billing, users, projects)
+#   - Redis         → Cache distribuído e sessões
+#   - RabbitMQ      → Message broker para processamento assíncrono
+#   - API Backend   → API REST principal (.NET 8)
+#   - Nginx         → Reverse proxy e load balancer
+# ============================================================================
+
+services:
+  # ============================================================================
+  # DATABASE: MongoDB 7.x
+  # Banco de dados NoSQL para persistência de dados
+  # Porta: 27017 | UI Admin: MongoDB Compass
+  # ============================================================================
+  mongodb:
+    image: mongo:7-jammy
+    container_name: shancrys-database-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: shancrys2024
+      MONGO_INITDB_DATABASE: shancrys
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - shancrys-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # CACHE: Redis 7.x
+  # Cache distribuído em memória para sessões e dados temporários
+  # Porta: 6379 | CLI: redis-cli
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: shancrys-cache-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - shancrys-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ============================================================================
+  # MESSAGE BROKER: RabbitMQ 3.x
+  # Fila de mensagens para processamento assíncrono
+  # Porta AMQP: 5672 | Management UI: http://localhost:15672
+  # Credenciais: admin / shancrys2024
+  # ============================================================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: shancrys-queue-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: shancrys2024
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - shancrys-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # BACKEND API: Shancrys REST API (.NET 8)
+  # API principal para gerenciamento de projetos, usuários e BIM
+  # Porta: 5000 | Swagger: http://localhost:5000/swagger
+  # Health Check: http://localhost:5000/health
+  # ============================================================================
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: shancrys-backend-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5000
+      MongoDb__ConnectionString: mongodb://admin:shancrys2024@mongodb:27017
+      MongoDb__DatabaseName: shancrys
+      JwtSettings__SecretKey: your-super-secret-key-change-in-production-min-32-chars-long-for-security
+      JwtSettings__Issuer: shancrys-api
+      JwtSettings__Audience: shancrys-clients
+      JwtSettings__ExpirationMinutes: 60
+      JwtSettings__RefreshTokenExpirationDays: 7
+      RabbitMQ__HostName: rabbitmq
+      RabbitMQ__Port: 5672
+      RabbitMQ__UserName: admin
+      RabbitMQ__Password: shancrys2024
+      Redis__ConnectionString: redis:6379
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY}
+      Stripe__PublishableKey: ${STRIPE_PUBLISHABLE_KEY}
+      Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - shancrys-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Analytics Service (placeholder)
+  # analytics:
+  #   build:
+  #     context: ./analytics
+  #     dockerfile: Dockerfile
+  #   container_name: shancrys-analytics
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5001:5001"
+  #   depends_on:
+  #     - mongodb
+  #     - rabbitmq
+  #   networks:
+  #     - shancrys-network
+
+  # ============================================================================
+  # REVERSE PROXY: Nginx
+  # Proxy reverso para roteamento e load balancing
+  # Porta HTTP: 80 | Porta HTTPS: 443
+  # ============================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: shancrys-proxy-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+    networks:
+      - shancrys-network
+
+# ============================================================================
+# VOLUMES - Persistência de Dados
+# Volumes Docker para garantir que dados não sejam perdidos ao reiniciar
+# ============================================================================
+volumes:
+  mongodb_data:
+    driver: local
+    name: shancrys-vol-mongodb-data
+  mongodb_config:
+    driver: local
+    name: shancrys-vol-mongodb-config
+  redis_data:
+    driver: local
+    name: shancrys-vol-redis-data
+  rabbitmq_data:
+    driver: local
+    name: shancrys-vol-rabbitmq-data
+
+# ============================================================================
+# NETWORK - Rede Interna
+# Rede bridge isolada para comunicação entre containers
+# ============================================================================
+networks:
+  shancrys-network:
+    driver: bridge
+    name: shancrys-internal-network

@@ -1,0 +1,100 @@
+{
+    "title": "Shancrys BIM",
+    "subtitle": "Plataforma Inteligente de Gestión de Construcción",
+    "description": "Visualización 3D de modelos IFC, cuantificación automática, planificación 4D y gestión colaborativa en una única plataforma.",
+    "cta": {
+        "start": "Comenzar Gratis",
+        "demo": "Solicitar Demo",
+        "learn": "Saber Más"
+    },
+    "features": {
+        "title": "Funcionalidades",
+        "subtitle": "Todo lo que necesitas para gestionar proyectos BIM",
+        "viewer3d": {
+            "title": "Visor 3D Avanzado",
+            "description": "Navegación fluida en modelos IFC con controles intuitivos y renderizado de alta calidad."
+        },
+        "quantification": {
+            "title": "Cuantificación Automática",
+            "description": "Extraiga cantidades de materiales automáticamente y exporte a Excel o CSV."
+        },
+        "measurement": {
+            "title": "Herramientas de Medición",
+            "description": "Mida distancias, áreas y ángulos directamente en el modelo 3D con precisión milimétrica."
+        },
+        "timeline": {
+            "title": "Timeline 4D",
+            "description": "Visualice el cronograma de obra integrado al modelo 3D para mejor planificación."
+        },
+        "collaboration": {
+            "title": "Colaboración en Tiempo Real",
+            "description": "Trabaje en equipo con control de versiones y permisos granulares."
+        },
+        "reports": {
+            "title": "Informes Inteligentes",
+            "description": "Genere informes personalizados con gráficos y análisis automáticamente."
+        }
+    },
+    "pricing": {
+        "title": "Planes y Precios",
+        "subtitle": "Elija el plan ideal para su necesidad",
+        "free": {
+            "name": "Gratuito",
+            "price": "$0",
+            "period": "/mes",
+            "description": "Para comenzar y probar la plataforma",
+            "features": [
+                "1 proyecto",
+                "Visor 3D básico",
+                "Hasta 100 MB de almacenamiento",
+                "Soporte por email"
+            ],
+            "cta": "Comenzar Ahora"
+        },
+        "pro": {
+            "name": "Profesional",
+            "price": "$19",
+            "period": "/mes",
+            "description": "Para profesionales y pequeños equipos",
+            "features": [
+                "10 proyectos",
+                "Todas las herramientas avanzadas",
+                "5 GB de almacenamiento",
+                "Cuantificación ilimitada",
+                "Soporte prioritario"
+            ],
+            "cta": "Suscribir Pro",
+            "popular": "Más Popular"
+        },
+        "enterprise": {
+            "name": "Enterprise",
+            "price": "Personalizado",
+            "period": "",
+            "description": "Para grandes organizaciones",
+            "features": [
+                "Proyectos ilimitados",
+                "Almacenamiento ilimitado",
+                "API personalizada",
+                "Soporte 24/7",
+                "Capacitación dedicada"
+            ],
+            "cta": "Hablar con Ventas"
+        }
+    },
+    "footer": {
+        "product": "Producto",
+        "features": "Funcionalidades",
+        "pricing": "Precios",
+        "docs": "Documentación",
+        "api": "API",
+        "company": "Empresa",
+        "about": "Acerca de",
+        "blog": "Blog",
+        "careers": "Carreras",
+        "contact": "Contacto",
+        "legal": "Legal",
+        "privacy": "Privacidad",
+        "terms": "Términos de Uso",
+        "copyright": "© 2025 Shancrys. Todos los derechos reservados."
+    }
+}

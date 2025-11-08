@@ -1,0 +1,68 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+.azure
+azure-pipelines.yml
+
+# Documentation
+*.md
+docs/
+specs/
+
+# IDE
+.vs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+publish/
+out/
+
+# Environment
+.env
+.env.*
+*.local
+
+# Tests
+*.Test/
+*Tests/
+coverage/
+test-results/
+
+# Build artifacts
+dist/
+build/
+target/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+tmp/
+temp/
+*.tmp
+*.log
+
+# Infra (not needed in container)
+infra/
+infrastructure/
+scripts/

@@ -1,0 +1,187 @@
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│                   🚀 SHANCRYS BACKEND - INFRAESTRUTURA                     │
+│                          Docker + Kubernetes                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+📦 ESTRUTURA DE CONTAINERS
+═══════════════════════════════════════════════════════════════════════════
+
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│    Nginx     │────▶│  Shancrys    │────▶│   MongoDB    │
+│   (Proxy)    │     │     API      │     │  (Database)  │
+│    :80       │     │    :5000     │     │   :27017     │
+└──────────────┘     └──────────────┘     └──────────────┘
+                            │
+                            ├────────────┐
+                            │            │
+                    ┌───────▼─────┐  ┌──▼──────────┐
+                    │    Redis    │  │  RabbitMQ   │
+                    │   (Cache)   │  │ (Messages)  │
+                    │    :6379    │  │   :5672     │
+                    └─────────────┘  └─────────────┘
+
+
+🎯 FUNCIONALIDADES IMPLEMENTADAS
+═══════════════════════════════════════════════════════════════════════════
+
+✅ AUTENTICAÇÃO JWT
+   • Registro de usuários (BCrypt)
+   • Login com JWT Token
+   • Refresh Token (7 dias)
+   • Revogação de tokens
+   • Multi-tenancy
+   • Roles: Admin, Manager, User, Viewer
+
+✅ INFRAESTRUTURA
+   • Docker Compose (Dev + Prod)
+   • Kubernetes Manifests
+   • Health Checks
+   • Auto-scaling (HPA)
+   • Nginx Reverse Proxy
+   • Persistent Volumes
+
+✅ SEGURANÇA
+   • Senhas hasheadas (BCrypt)
+   • JWT com HMAC-SHA256
+   • Secrets gerenciados
+   • HTTPS ready
+   • Rate limiting
+   • Security headers
+
+
+📚 ARQUIVOS CRIADOS
+═══════════════════════════════════════════════════════════════════════════
+
+DOCKER:
+  ├── docker-compose.yml          ─── Dev environment
+  ├── docker-compose.prod.yml     ─── Production
+  ├── .env.example                ─── Environment template
+  └── nginx/nginx.conf            ─── Reverse proxy
+
+KUBERNETES:
+  └── k8s/deployment.yaml         ─── Complete K8s manifest
+      ├── Namespace
+      ├── ConfigMaps
+      ├── Secrets
+      ├── Deployments (MongoDB, Redis, RabbitMQ, API)
+      ├── Services
+      ├── PVCs
+      ├── HPA
+      └── Ingress
+
+SCRIPTS:
+  ├── scripts/docker-start.ps1    ─── Start Docker
+  ├── scripts/docker-stop.ps1     ─── Stop Docker
+  ├── scripts/deploy-k8s.ps1      ─── Deploy to K8s
+  ├── scripts/minikube-setup.ps1  ─── Local K8s setup
+  └── scripts/test-infrastructure.ps1 ─── Full test suite
+
+API:
+  ├── Controllers/
+  │   ├── AuthController.cs       ─── Authentication endpoints
+  │   ├── HealthController.cs     ─── Health checks
+  │   └── ProjectsController.cs   ─── Projects (partial)
+  ├── Services/
+  │   └── AuthService.cs          ─── Auth logic
+  ├── Middleware/
+  │   └── TenantMiddleware.cs     ─── Multi-tenancy
+  └── Models/
+      └── Entities.cs             ─── User, RefreshToken, Project
+
+
+🚀 COMANDOS RÁPIDOS
+═══════════════════════════════════════════════════════════════════════════
+
+DOCKER COMPOSE:
+  .\scripts\docker-start.ps1              # Iniciar tudo
+  docker-compose logs -f api              # Ver logs
+  docker-compose restart api              # Reiniciar API
+  .\scripts\docker-stop.ps1               # Parar tudo
+
+KUBERNETES:
+  .\scripts\deploy-k8s.ps1                # Deploy completo
+  kubectl get all -n shancrys             # Ver status
+  kubectl logs -f deployment/shancrys-api -n shancrys  # Logs
+  kubectl scale deployment/shancrys-api --replicas=5   # Scale
+
+TESTES:
+  .\scripts\test-infrastructure.ps1       # Teste completo
+  curl http://localhost:5000/health       # Health check
+  .\api\test-auth.ps1                     # Teste de auth
+
+
+🌐 ENDPOINTS
+═══════════════════════════════════════════════════════════════════════════
+
+API:              http://localhost:5000
+Swagger:          http://localhost:5000/swagger
+Health:           http://localhost:5000/health
+
+Auth Endpoints:
+  POST   /api/v1/auth/register      # Registrar usuário
+  POST   /api/v1/auth/login         # Login
+  POST   /api/v1/auth/refresh       # Renovar token
+  POST   /api/v1/auth/revoke        # Revogar token
+  GET    /api/v1/auth/me            # Dados do usuário (🔒)
+
+Projects Endpoints:
+  GET    /api/v1/projects           # Listar projetos (🔒)
+  POST   /api/v1/projects           # Criar projeto (🔒)
+  GET    /api/v1/projects/{id}      # Obter projeto (🔒)
+
+Services:
+  MongoDB:          localhost:27017
+  Redis:            localhost:6379
+  RabbitMQ:         localhost:5672
+  RabbitMQ UI:      http://localhost:15672
+
+
+📊 MÉTRICAS E OBSERVABILIDADE
+═══════════════════════════════════════════════════════════════════════════
+
+Health Checks:
+  • Liveness:  GET /health/live
+  • Readiness: GET /health/ready
+  • Full:      GET /health
+
+Kubernetes HPA:
+  • Min replicas: 3
+  • Max replicas: 10
+  • CPU target: 70%
+  • Memory target: 80%
+
+Resources (por pod):
+  • Requests: 256Mi RAM, 250m CPU
+  • Limits:   1Gi RAM, 1000m CPU
+
+
+🎯 PRÓXIMOS PASSOS
+═══════════════════════════════════════════════════════════════════════════
+
+1. ✅ Autenticação JWT
+2. ✅ Docker + Kubernetes
+3. ⏳ Completar CRUD de Projetos
+4. ⏳ Upload de arquivos IFC (Azure Blob)
+5. ⏳ Parser de arquivos IFC
+6. ⏳ Atividades 4D (Cronograma)
+7. ⏳ Quantitativos e Composições
+8. ⏳ SignalR (Real-time)
+9. ⏳ Billing (Stripe)
+10. ⏳ Analytics e Relatórios
+
+
+📝 DOCUMENTAÇÃO
+═══════════════════════════════════════════════════════════════════════════
+
+README.md                    ─── Guia rápido
+DOCKER_KUBERNETES_GUIDE.md   ─── Guia completo Docker & K8s
+BACKEND_ROADMAP.md           ─── Roadmap de desenvolvimento
+
+
+═══════════════════════════════════════════════════════════════════════════
+                    Shancrys © 2025 - Version 1.0.0
+═══════════════════════════════════════════════════════════════════════════
+```

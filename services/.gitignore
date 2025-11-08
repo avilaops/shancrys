@@ -1,0 +1,43 @@
+# .gitignore para Shancrys Services
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+*.log
+appsettings.Development.json
+
+# Docker
+.env
+
+# IDEs
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+*.key
+*.pem
+*.crt
+ssl/
+
+# Temp
+temp/
+tmp/
+*.tmp
+
+# Logs
+logs/
+*.log

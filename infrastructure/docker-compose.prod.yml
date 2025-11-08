@@ -1,0 +1,191 @@
+version: '3.8'
+
+# =============================================================================
+# SHANCRYS - DOCKER COMPOSE PARA PRODUÇÃO
+# =============================================================================
+# Este arquivo é otimizado para ambientes de produção
+# Use: docker-compose -f docker-compose.prod.yml up -d
+# =============================================================================
+
+services:
+  mongodb:
+    image: mongo:7-jammy
+    container_name: shancrys-mongodb-prod
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
+    ports:
+      # NÃO expor MongoDB publicamente em produção
+      - "127.0.0.1:27017:27017"
+    volumes:
+  - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      # NÃO montar init-scripts em produção
+    networks:
+      - shancrys-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: always
+    deploy:
+      resources:
+        limits:
+    cpus: '2.0'
+memory: 2G
+   reservations:
+          cpus: '0.5'
+  memory: 1G
+    # Segurança adicional
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp
+
+  rabbitmq:
+image: rabbitmq:3.13-management-alpine
+    container_name: shancrys-rabbitmq-prod
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+    RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      # Configurações de produção
+      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.6
+   RABBITMQ_DISK_FREE_LIMIT: 2GB
+    ports:
+   - "127.0.0.1:5672:5672"
+  - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    networks:
+      - shancrys-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+    retries: 3
+ start_period: 40s
+    restart: always
+    deploy:
+      resources:
+     limits:
+    cpus: '1.0'
+      memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    security_opt:
+      - no-new-privileges:true
+
+  redis:
+ image: redis:7-alpine
+    container_name: shancrys-redis-prod
+    command: >
+      redis-server 
+      --appendonly yes
+    --requirepass ${REDIS_PASSWORD}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - shancrys-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+ timeout: 10s
+      retries: 3
+    restart: always
+    deploy:
+      resources:
+   limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+     cpus: '0.1'
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+
+  api:
+    image: ${DOCKER_REGISTRY:-ghcr.io}/shancrys/api:${API_IMAGE_TAG:-latest}
+    container_name: shancrys-api-prod
+    environment:
+ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:5000
+      MongoDb__ConnectionString: "mongodb://${MONGODB_ROOT_USER}:${MONGODB_ROOT_PASSWORD}@mongodb:27017"
+  MongoDb__DatabaseName: ${MONGODB_DATABASE}
+ RabbitMQ__HostName: rabbitmq
+      RabbitMQ__Port: 5672
+      RabbitMQ__UserName: ${RABBITMQ_USER}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+      Redis__ConnectionString: "redis:6379,password=${REDIS_PASSWORD}"
+      JwtSettings__SecretKey: ${JWT_SECRET_KEY}
+      JwtSettings__Issuer: ${JWT_ISSUER}
+      JwtSettings__Audience: ${JWT_AUDIENCE}
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY}
+   Stripe__PublishableKey: ${STRIPE_PUBLISHABLE_KEY}
+      AzureStorage__ConnectionString: ${AZURE_STORAGE_CONNECTION_STRING}
+ ports:
+      - "${API_PORT:-5000}:5000"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - shancrys-network
+    restart: always
+    deploy:
+    resources:
+    limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+     cpus: '0.5'
+          memory: 512M
+      # Auto-scaling (requer Docker Swarm ou Kubernetes)
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+      order: start-first
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+  timeout: 10s
+      retries: 3
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+    # Logging otimizado
+    logging:
+    driver: "json-file"
+      options:
+        max-size: "10m"
+     max-file: "3"
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  shancrys-network:
+    driver: bridge
+    ipam:
+      config:
+   - subnet: 172.20.0.0/16
