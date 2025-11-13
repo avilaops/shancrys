@@ -1,0 +1,177 @@
+name: ?? Send Module Completion Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: 'Módulo finalizado (ex: Frontend/Viewer3D)'
+        required: true
+        type: string
+      status:
+        description: 'Status do módulo'
+        required: true
+        type: choice
+        options:
+          - completed
+          - in-progress
+          - review
+          - blocked
+      description:
+        description: 'Descrição do que foi feito'
+        required: false
+        type: string
+      features:
+        description: 'Features implementadas (separadas por vírgula)'
+        required: false
+        type: string
+      challenges:
+        description: 'Desafios enfrentados (separados por vírgula)'
+        required: false
+        type: string
+      next_steps:
+        description: 'Próximos passos (separados por vírgula)'
+        required: false
+        type: string
+
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/**'
+      - 'frontend/**'
+      - 'mobile/**'
+      - 'engine/**'
+      - 'devtools/**'
+      - 'infra/**'
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: ?? Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+      
+      - name: ?? Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: ?? Install dependencies
+        run: |
+          pip install python-dotenv
+      
+      - name: ?? Create .env.reports
+        run: |
+          cat > .env.reports << EOF
+          AVILA_SMTP_SERVER=${{ secrets.AVILA_SMTP_SERVER }}
+          AVILA_SMTP_PORT=${{ secrets.AVILA_SMTP_PORT }}
+          AVILA_SMTP_USERNAME=${{ secrets.AVILA_SMTP_USERNAME }}
+          AVILA_SMTP_PASSWORD=${{ secrets.AVILA_SMTP_PASSWORD }}
+          AVILA_EMAIL_FROM=${{ secrets.AVILA_EMAIL_FROM }}
+          SHANCRYS_REPORT_TO=${{ secrets.SHANCRYS_REPORT_TO }}
+          SHANCRYS_REPORT_CC=${{ secrets.SHANCRYS_REPORT_CC }}
+          SHANCRYS_PROJECT_NAME=Shancrys Platform 4D BIM
+          SHANCRYS_ORGANIZATION=ÁvilaOps
+          SHANCRYS_REPOSITORY=https://github.com/avilaops/shancrys
+          SHANCRYS_AUTO_EMAIL=true
+          SHANCRYS_ATTACH_HTML=true
+          EOF
+      
+      - name: ?? Detect changed module
+        id: detect
+        if: github.event_name == 'push'
+        run: |
+          # Detectar qual módulo foi alterado
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+          echo "Changed files: $CHANGED_FILES"
+          
+          MODULE=""
+          if echo "$CHANGED_FILES" | grep -q "^services/"; then
+            MODULE="Services/API"
+          elif echo "$CHANGED_FILES" | grep -q "^frontend/"; then
+            MODULE="Frontend"
+          elif echo "$CHANGED_FILES" | grep -q "^mobile/"; then
+            MODULE="Mobile"
+          elif echo "$CHANGED_FILES" | grep -q "^engine/"; then
+            MODULE="Engine"
+          elif echo "$CHANGED_FILES" | grep -q "^devtools/"; then
+            MODULE="DevTools"
+          elif echo "$CHANGED_FILES" | grep -q "^infra/"; then
+            MODULE="Infrastructure"
+          fi
+          
+          echo "module=$MODULE" >> $GITHUB_OUTPUT
+      
+      - name: ?? Generate report (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          FEATURES_ARG=""
+          if [ -n "${{ github.event.inputs.features }}" ]; then
+            IFS=',' read -ra FEATURES <<< "${{ github.event.inputs.features }}"
+            for feat in "${FEATURES[@]}"; do
+              FEATURES_ARG="$FEATURES_ARG --features \"$feat\""
+            done
+          fi
+          
+          CHALLENGES_ARG=""
+          if [ -n "${{ github.event.inputs.challenges }}" ]; then
+            IFS=',' read -ra CHALLENGES <<< "${{ github.event.inputs.challenges }}"
+            for ch in "${CHALLENGES[@]}"; do
+              CHALLENGES_ARG="$CHALLENGES_ARG --challenges \"$ch\""
+            done
+          fi
+          
+          NEXT_STEPS_ARG=""
+          if [ -n "${{ github.event.inputs.next_steps }}" ]; then
+            IFS=',' read -ra STEPS <<< "${{ github.event.inputs.next_steps }}"
+            for step in "${STEPS[@]}"; do
+              NEXT_STEPS_ARG="$NEXT_STEPS_ARG --next-steps \"$step\""
+            done
+          fi
+          
+          eval python shancrys_report.py \
+            --module "${{ github.event.inputs.module }}" \
+            --status "${{ github.event.inputs.status }}" \
+            --description "${{ github.event.inputs.description }}" \
+            $FEATURES_ARG \
+            $CHALLENGES_ARG \
+            $NEXT_STEPS_ARG
+      
+      - name: ?? Generate report (push)
+        if: github.event_name == 'push' && steps.detect.outputs.module != ''
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          python shancrys_report.py \
+            --module "${{ steps.detect.outputs.module }}" \
+            --status "in-progress" \
+            --description "$COMMIT_MSG"
+      
+      - name: ?? Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: module-report-${{ github.run_number }}
+          path: Reports/*.html
+          retention-days: 90
+      
+      - name: ?? Check logs for errors
+        if: always()
+        run: |
+          echo "=== CHECKING FOR ERRORS ==="
+          if [ -f "Reports/*.html" ]; then
+            echo "? Report generated successfully"
+            ls -lh Reports/
+          else
+            echo "? No report file found"
+            exit 1
+          fi
+          
+          # Verificar se houve erros no workflow
+          if [ $? -ne 0 ]; then
+            echo "? Errors detected in workflow"
+            exit 1
+          fi
+          
+          echo "? No errors detected"
